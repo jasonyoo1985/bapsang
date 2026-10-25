@@ -9,7 +9,7 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>한주 식구밥상</title>
+<title>한주 가족밥상</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#2F5D4A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -240,7 +240,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
 </style>
 
 <div class="wrap">
-  <header class="top"><h1>한주 식구밥상</h1><span id="todayLabel"></span><span id="syncDot" class="syncdot" hidden></span></header>
+  <header class="top"><h1>한주 가족밥상</h1><span id="todayLabel"></span><span id="syncDot" class="syncdot" hidden></span></header>
 
   <!-- 오늘: 실행 -->
   <section class="tab active" id="tab-today">
@@ -314,9 +314,9 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
       <div class="field"><label for="importFile">또는 백업 파일 선택</label><input id="importFile" type="file" accept=".json,.txt,application/json,text/plain"></div>
       <div class="btnrow"><button class="btn primary" id="importBtn">복원하기</button></div>
     </div>
-    <div class="sechead"><h2>한주 식구밥상은</h2></div>
+    <div class="sechead"><h2>한주 가족밥상은</h2></div>
     <div class="card charter">
-      <p><b>식구(食口)</b>는 한솥밥을 먹는 사람이라는 뜻이에요. 한주 식구밥상은 가족이 함께 먹을 밥상을 미리 짜 두고, 같은 식단표를 함께 보는 앱이에요.</p>
+      <p>한주 가족밥상은 가족이 함께 먹을 밥상을 한 주 단위로 미리 짜 두고, 같은 식단표를 함께 보는 앱이에요. 메뉴 하나로 대화가 열리고, 계획한 만큼 장을 봐서 과소비도 줄어요.</p>
       <ul><li>가족이 함께 먹는 밥상이 중심이에요.</li><li>입력은 최소로, 처음 메뉴 등록할 때만 조금 손이 가요.</li><li>칼로리·영양·재료비는 가족 밥상을 돌아보는 참고용이에요. 다이어트 앱이 아니에요.</li></ul>
     </div>
     <div class="sechead"><h2>초기화</h2></div>
@@ -329,7 +329,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
   <!-- 의견 -->
   <section class="tab" id="tab-fb">
     <div class="sechead"><h2>의견 보내기</h2></div>
-    <p class="help">원하는 기능, 불편한 점, 버그 무엇이든 들려주세요. 한주 식구밥상은 가족이 함께 먹는 밥상을 위한 앱이라, 그 취지에 맞는 의견부터 반영해요.</p>
+    <p class="help">원하는 기능, 불편한 점, 버그 무엇이든 들려주세요. 한주 가족밥상은 가족이 함께 먹는 밥상을 위한 앱이라, 그 취지에 맞는 의견부터 반영해요.</p>
     <div class="card">
       <span class="rowlabel">앱은 어떠세요? (선택)</span>
       <div class="stars" id="fbStars" role="radiogroup" aria-label="별점"><button data-star="1" aria-label="별 1개">★</button><button data-star="2" aria-label="별 2개">★</button><button data-star="3" aria-label="별 3개">★</button><button data-star="4" aria-label="별 4개">★</button><button data-star="5" aria-label="별 5개">★</button></div>
@@ -1058,7 +1058,7 @@ function joinFamily(raw,done){
 }
 function invite(){
   const f=syncCfg().family;
-  const t=`한주 식구밥상 같이 써요!\n\n1. 앱 설치: ${PLAY_URL}\n2. 앱 첫 화면에서 '가족 코드로 참여'를 누르고\n3. 아래 코드를 붙여 넣어 주세요.\n\n${f}`;
+  const t=`한주 가족밥상 같이 써요!\n\n1. 앱 설치: ${PLAY_URL}\n2. 앱 첫 화면에서 '가족 코드로 참여'를 누르고\n3. 아래 코드를 붙여 넣어 주세요.\n\n${f}`;
   if(window.AndroidShare)return window.AndroidShare.share(t);
   if(navigator.share)return navigator.share({text:t}).catch(()=>{});
   copyText(t,'초대 글을 복사했어요. 카톡에 붙여 넣으세요');
@@ -1082,8 +1082,8 @@ function joinForm(after){
     });
 }
 function onboard(){
-  openModal(`<h2>한주 식구밥상</h2>
-    <p class="help"><b>식구(食口)</b>는 한솥밥을 먹는 사람이에요. 가족이 함께 먹을 밥상을 미리 짜 두고, 같은 식단표를 함께 봐요.</p>
+  openModal(`<h2>한주 가족밥상</h2>
+    <p class="help">가족이 한 주 동안 함께 먹을 밥상을 미리 짜 두고, 같은 식단표를 함께 봐요.</p>
     <span class="rowlabel">우리 가족이 함께 먹는 끼니</span>
     <div class="mealsbox obmeals"></div>
     <p class="help" style="margin:0">가족 코드로 참여하면 그 가족의 설정을 따라요. 나중에 ‘설정’ 탭에서 바꿀 수 있어요.</p>
@@ -1114,7 +1114,7 @@ function renderSync(){
   card.innerHTML=`<div class="check"><span class="syncdot ${syncState==='on'?'on':'err'}">${label}</span>${time?`<span class="help" style="margin:0">마지막 동기화 ${time}</span>`:''}</div>
     <p class="help" style="margin:0">${syncState==='offline'?'인터넷이 연결되면 바뀐 내용을 자동으로 올려요.':syncState==='error'?'공유 저장소에 연결하지 못했어요. 잠시 뒤 다시 열어 주세요.':'초대받은 가족과 같은 식단표를 보고 있어요. 한쪽에서 바꾸면 몇 초 안에 다른 폰에도 반영돼요.'}</p>
     <p class="help" style="margin:0">가족 코드 <code>${esc(c.family.slice(0,6))}…</code></p>
-    <div class="pcbox"><b>PC에서도 한주 식구밥상 쓰기</b><span class="help" style="margin:0">PC 브라우저에서 아래 주소를 열면 우리 가족 식단표가 그대로 보여요. 폰과 실시간으로 함께 바뀌어요.</span><code>${esc(WEB_URL.replace('https://',''))}</code><div class="btnrow" style="margin:0"><button class="btn small" id="syPc">PC용 주소 복사</button></div></div>
+    <div class="pcbox"><b>PC에서도 한주 가족밥상 쓰기</b><span class="help" style="margin:0">PC 브라우저에서 아래 주소를 열면 우리 가족 식단표가 그대로 보여요. 폰과 실시간으로 함께 바뀌어요.</span><code>${esc(WEB_URL.replace('https://',''))}</code><div class="btnrow" style="margin:0"><button class="btn small" id="syPc">PC용 주소 복사</button></div></div>
     <div class="btnrow"><button class="btn small danger" id="syDel">공유 식단 삭제</button><button class="btn small" id="syLeave">가족에서 나가기</button><button class="btn small" id="syChange">코드 바꾸기</button><button class="btn primary small" id="syInvite">초대하기</button></div>`;
   $('#syInvite').onclick=invite;
   $('#syPc').onclick=()=>copyText(`${WEB_URL}/#join-${c.family}`,'PC용 주소를 복사했어요. 카톡 나에게 보내기로 PC에서 열어 보세요');
@@ -1158,7 +1158,7 @@ $('#fbSend').onclick=()=>{
   const item={id,text,star:fbStar,date:`${d.getMonth()+1}월 ${d.getDate()}일`,sent:false};
   const keep=ok=>{item.sent=ok;const l=fbLoad();l.push(item);try{localStorage.setItem('wd.fb',JSON.stringify(l.slice(-30)))}catch(e){}
     $('#fbText').value='';fbStar=0;renderFb();toast(ok?'고마워요! 의견을 보냈어요':'인터넷 연결을 확인하고 다시 보내 주세요')};
-  if(!FEEDBACK.url||!FEEDBACK.text){copyText(`[한주 식구밥상 의견] 번호 ${id}\n별점 ${fbStar||'-'}\n${text}\n(${APP_VERSION} · ${deviceName()})`,'의견을 복사했어요');return keep(false)}
+  if(!FEEDBACK.url||!FEEDBACK.text){copyText(`[한주 가족밥상 의견] 번호 ${id}\n별점 ${fbStar||'-'}\n${text}\n(${APP_VERSION} · ${deviceName()})`,'의견을 복사했어요');return keep(false)}
   const f=new URLSearchParams();f.append(FEEDBACK.star,fbStar?String(fbStar):'-');f.append(FEEDBACK.text,text);f.append(FEEDBACK.info,`${APP_VERSION} · ${deviceName()}`);f.append(FEEDBACK.id,id);
   $('#fbSend').disabled=true;
   fetch(FEEDBACK.url,{method:'POST',mode:'no-cors',body:f}).then(()=>keep(true)).catch(()=>{$('#fbText').value=text;keep(false);$('#fbText').value=text;renderFb()});
