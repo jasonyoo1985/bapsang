@@ -1339,6 +1339,15 @@ function checkUpdate(){
 }
 document.addEventListener('click',e=>{const a=e.target.closest('.dev-card');if(!a)return;if(window.AndroidShare&&window.AndroidShare.openUrl){e.preventDefault();try{window.AndroidShare.openUrl(a.href)}catch(_){}}});
 const PLAY_URL='https://play.google.com/store/apps/details?id=com.yoo.familydinner';
+// 설치 안내 문구: PC 사이트 version.json의 install 칸 (정식 출시 때 그 파일만 고치면 됨), 못 읽으면 기본 문구
+const INSTALL_DEFAULT=`지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)
+1. 테스터 그룹 가입: [그룹 가입]
+https://groups.google.com/g/bapsang-testers
+2. 테스터 등록: [BECOME A TESTER]
+https://play.google.com/apps/testing/com.yoo.familydinner
+3. 같은 화면 아래 [download it on Google Play]로 설치`;
+function installText(){try{const t=localStorage.getItem('wd.install');if(t)return t}catch(e){}return INSTALL_DEFAULT}
+function loadInstall(){try{fetch(WEB_URL+'/version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(v=>{const t=v&&typeof v.install==='string'?v.install.trim():'';if(t){try{localStorage.setItem('wd.install',t)}catch(e){}}}).catch(()=>{})}catch(e){}}
 const normCode=v=>(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 function setFamily(f){let c={};try{c=JSON.parse(localStorage.getItem('wd.sync')||'{}')}catch(e){}c.family=f;try{localStorage.setItem('wd.sync',JSON.stringify(c));localStorage.setItem('wd.onboard','1')}catch(e){}}
 function leaveFamily(msg){if(es){es.close();es=null}setFamily('');setSync('off');if(msg)toast(msg)}
@@ -1357,7 +1366,7 @@ function joinFamily(raw,done){
 }
 function invite(){
   const f=syncCfg().family;
-  const t=`한주 가족밥상 같이 써요!\n\n1. 앱 설치: ${PLAY_URL}\n2. 앱 첫 화면에서 '가족 코드로 참여'를 누르고\n3. 아래 코드를 붙여 넣어 주세요.\n\n${f}`;
+  const t=`한주 가족밥상 같이 써요!\n\n[설치]\n${installText()}\n\n[설치한 뒤]\n앱 첫 화면에서 '가족 코드로 참여'를 누르고 아래 코드를 붙여 넣어 주세요.\n\n${f}`;
   if(window.AndroidShare)return window.AndroidShare.share(t);
   if(navigator.share)return navigator.share({text:t}).catch(()=>{});
   copyText(t,'초대 글을 복사했어요. 카톡에 붙여 넣으세요');
@@ -1472,7 +1481,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='1.5';
+const APP_VERSION='1.6';
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
@@ -1511,7 +1520,7 @@ renderFb();loadReplies();
 window.androidBack=function(){if($('#modalRoot').innerHTML){closeModal();return true}if(curTab==='fb'){goTab('more');return true}if(curTab!=='today'){goTab('today');return true}return false};
 if(!FEATURE_SHOP)document.querySelector('#tabs [data-tab="shop"]').hidden=true;
 autoDone();saveLocal();
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate()}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate();loadInstall()}});loadInstall();
 render();renderSync();startSync();
 // PC 등에서 #join-가족코드 주소로 열면 바로 참여 창
 const jm=location.hash.match(/^#join-([a-z0-9]{20,})$/);
@@ -1522,7 +1531,7 @@ $('#tipOpen').onclick=()=>shareTip(true);
 $('#cartAdd').onclick=addCart;$('#cartClear').onclick=()=>{S.cart=S.cart.filter(x=>!x.done);save();renderCart()};
 document.addEventListener('click',e=>{if(e.target.id==='wishAdd')addWish()});
 let nameT;$('#myName').oninput=e=>{clearTimeout(nameT);nameT=setTimeout(()=>{S.members=S.members||{};S.members[DEV]={n:e.target.value.trim().slice(0,10),u:Date.now()};save()},600)};
-$('#appShare').onclick=()=>{const t=`한주 가족밥상 · 가족이 함께 짜는 한 주 밥상\n${PLAY_URL}`;if(window.AndroidShare)return window.AndroidShare.share(t);if(navigator.share)return navigator.share({text:t}).catch(()=>{});copyText(t,'앱 주소를 복사했어요')};
+$('#appShare').onclick=()=>{const t=`한주 가족밥상 · 가족이 함께 짜는 한 주 밥상\n\n${installText()}`;loadInstall();if(window.AndroidShare)return window.AndroidShare.share(t);if(navigator.share)return navigator.share({text:t}).catch(()=>{});copyText(t,'앱 주소를 복사했어요')};
 $('#appReview').onclick=()=>{try{if(window.AndroidShare&&window.AndroidShare.openUrl)window.AndroidShare.openUrl('market://details?id=com.yoo.familydinner');else window.open(PLAY_URL,'_blank')}catch(e){}};$('#guideOpen').onclick=guide;
 /* 화면을 옆으로 밀면 이웃 탭으로 (손가락을 따라 움직이고 부드럽게 넘어감) */
 (function(){
