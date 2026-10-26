@@ -247,6 +247,9 @@ textarea.code{font-family:ui-monospace,Menlo,monospace;font-size:12px;min-height
 details summary{cursor:pointer;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
 @media (max-width:380px){.stat b{font-size:18px}.toggle button{padding:5px 8px}}
+/* ---------- 1.7 줄바꿈: 단어 단위, 끝 글자만 남는 줄 줄이기 ---------- */
+body{word-break:keep-all;overflow-wrap:break-word}
+p,li,label,h1,h2,h3,.help,summary,.toast{text-wrap:pretty}
 /* ---------- 1.4 ---------- */
 nav.tabs button{font-size:11.5px;padding:7px 0}
 .wrap,#modalRoot{zoom:var(--z,1)}
@@ -425,11 +428,11 @@ nav.tabs button.on{background:var(--c-tab);color:#4A3410}
     <div class="sechead"><h2>한주 가족밥상은</h2></div>
     <div class="card charter">
       <p>한주 가족밥상은 가족이 함께 먹을 밥상을 한 주 단위로 미리 짜 두고, 같은 식단표를 함께 보는 앱이에요. 메뉴 하나로 대화가 열리고, 계획한 만큼 장을 봐서 과소비도 줄어요.</p>
-      <ul><li>가족이 함께 먹는 밥상이 중심이에요.</li><li>입력은 최소로, 처음 메뉴 등록할 때만 조금 손이 가요.</li><li>칼로리·영양·재료비는 가족 밥상을 돌아보는 참고용이에요. 다이어트 앱이 아니에요.</li></ul>
+      <ul><li>가족이 함께 먹는 밥상이 중심이에요.</li><li>처음 메뉴만 등록하면 입력은 거의 없어요.</li><li>칼로리·영양·재료비는 가족 밥상을 돌아보는 참고용이에요. 다이어트 앱이 아니에요.</li></ul>
     </div>
     <div class="sechead"><h2>초기화</h2></div>
     <div class="card">
-      <p class="help" style="margin:0">모든 식단, 재고, 메뉴와 메모를 지우고 처음 상태로 되돌립니다.</p>
+      <p class="help" style="margin:0">식단·메뉴·메모를 모두 지우고 처음으로 돌아가요.</p>
       <div class="btnrow"><button class="btn danger" id="resetBtn">처음 상태로 되돌리기</button></div>
     </div>
     <a href="https://www.stackupinfra.com" class="dev-card" target="_blank" rel="noopener">
@@ -1481,7 +1484,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='1.6';
+const APP_VERSION='1.7';
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소

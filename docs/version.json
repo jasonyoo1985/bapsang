@@ -1,8 +1,8 @@
 {
- "latest": "1.6",
+ "latest": "1.7",
  "notes": [
-  "앱 공유하기·가족 초대 글에 테스트 기간 설치 방법이 들어가요.",
-  "백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요."
+  "글이 단어 단위로 깔끔하게 줄 바꿈돼요.",
+  "설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."
  ],
  "install": "지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)\n1. 테스터 그룹 가입: [그룹 가입]\nhttps://groups.google.com/g/bapsang-testers\n2. 테스터 등록: [BECOME A TESTER]\nhttps://play.google.com/apps/testing/com.yoo.familydinner\n3. 같은 화면 아래 [download it on Google Play]로 설치"
 }
