@@ -489,7 +489,12 @@ const KCAL={'제육':450,'돼지갈비':600,'소갈비':650,'갈비찜':550,'불
  '고등어':300,'삼치':250,'갈치':250,'조기':200,'연어':300,'오징어볶음':300,'오징어':200,'낙지':250,'쭈꾸미':250,'주꾸미':250,'새우':200,'잡채':300,
  '샐러드':150,'두부조림':150,'두부부침':180,'두부':120,'계란말이':180,'계란찜':100,'계란후라이':100,'장조림':120,'메추리알':130,'멸치볶음':100,'콩자반':120,'어묵':130,'진미채':150,'소시지':250,
  '김치':20,'깍두기':20,'김':30,'시금치':40,'콩나물':40,'숙주':30,'고사리':60,'도라지':60,'무생채':40,'오이':30,'양파':30,'버섯볶음':70,'버섯':70,'애호박':50,'호박':50,'가지':80,'감자조림':120,'감자볶음':120,'감자':120,'우엉':120,'연근':120,'브로콜리':40,'나물':50,'겉절이':30,'전':250};
-const kcalGuess=name=>{let best=null;for(const k of Object.keys(KCAL))if(name.includes(k)&&(!best||k.length>best.length))best=k;return best?KCAL[best]:null};
+// 칼로리 대략값: 앱 기본표 먼저, 없으면 PC 사이트 kcal.json (식약처 음식 영양성분 자료로 만든 표, 폰에 저장해 두고 씀)
+let KCAL_DB=null;try{KCAL_DB=JSON.parse(localStorage.getItem('wd.kcal')||'null')}catch(e){}
+const longest=(tbl,name)=>{let best=null;for(const k in tbl)if(name.includes(k)&&(!best||k.length>best.length))best=k;return best?tbl[best]:null};
+const kcalGuess=name=>{name=String(name||'').replace(/\s+/g,'');if(!name)return null;return longest(KCAL,name)??(KCAL_DB?longest(KCAL_DB,name):null)};
+function loadKcalDb(){try{const last=+(localStorage.getItem('wd.kcal.t')||0);if(KCAL_DB&&Date.now()-last<7*864e5)return}catch(e){}
+  try{fetch(WEB_URL+'/kcal.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(t=>{if(!t||typeof t!=='object'||Object.keys(t).length<50)return;KCAL_DB=t;try{localStorage.setItem('wd.kcal',JSON.stringify(t));localStorage.setItem('wd.kcal.t',String(Date.now()))}catch(e){}try{render()}catch(e){}}).catch(()=>{})}catch(e){}}
 const kcalOf=d=>d?(d.kcal!=null&&d.kcal!==''?+d.kcal:kcalGuess(d.name)):null;
 const manwon=n=>n>=10000?(Math.round(n/1000)/10)+'만원':n.toLocaleString('ko-KR')+'원';
 function dishInfo(d){const k=kcalOf(d);return [d.healthy?'건강식':'',k?`약 ${k}kcal`:'',d.cost?`재료 약 ${manwon(+d.cost)}`:'',d.lasts?`${d.lasts}일쯤 먹음`:''].filter(Boolean).join(' · ')}
@@ -1442,7 +1447,7 @@ function guide(){
     <h3>5. 메뉴·메모</h3>
     <ul><li>우리 집 메뉴를 주 메뉴와 반찬으로 모아 두세요. ★는 자주 먹는 메뉴예요.</li>
       <li>메뉴를 누르면 메모를 적을 수 있어요. 반찬을 길게 누르면 ‘떨어짐’ 표시가 돼요.</li>
-      <li>재료비와 칼로리는 안 적어도 되는 참고용이에요.</li></ul>
+      <li>재료비와 칼로리는 안 적어도 되는 참고용이에요. 칼로리는 메뉴 이름을 보고 식약처 음식 영양성분 자료로 대략 넣어 줘요.</li></ul>
     <h3>6. 편하게 쓰는 팁</h3>
     <ul><li>화면을 옆으로 밀면 다음 탭으로 넘어가요.</li>
       <li>설정 탭에서 내 이름(예: 엄마)을 정하면, 가족 폰에 ‘엄마가 화요일 식단을 바꿨어요’처럼 보여요.</li>
@@ -1484,7 +1489,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='1.7';
+const APP_VERSION='1.8';
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
@@ -1523,7 +1528,7 @@ renderFb();loadReplies();
 window.androidBack=function(){if($('#modalRoot').innerHTML){closeModal();return true}if(curTab==='fb'){goTab('more');return true}if(curTab!=='today'){goTab('today');return true}return false};
 if(!FEATURE_SHOP)document.querySelector('#tabs [data-tab="shop"]').hidden=true;
 autoDone();saveLocal();
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate();loadInstall()}});loadInstall();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate();loadInstall()}});loadInstall();loadKcalDb();
 render();renderSync();startSync();
 // PC 등에서 #join-가족코드 주소로 열면 바로 참여 창
 const jm=location.hash.match(/^#join-([a-z0-9]{20,})$/);

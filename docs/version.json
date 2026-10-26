@@ -1,8 +1,7 @@
 {
- "latest": "1.7",
+ "latest": "1.8",
  "notes": [
-  "글이 단어 단위로 깔끔하게 줄 바꿈돼요.",
-  "설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."
+  "메뉴 이름을 보고 칼로리를 넣어 주는 음식이 112개에서 1,200개 넘게 늘었어요."
  ],
  "install": "지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)\n1. 테스터 그룹 가입: [그룹 가입]\nhttps://groups.google.com/g/bapsang-testers\n2. 테스터 등록: [BECOME A TESTER]\nhttps://play.google.com/apps/testing/com.yoo.familydinner\n3. 같은 화면 아래 [download it on Google Play]로 설치"
 }
