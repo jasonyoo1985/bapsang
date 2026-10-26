@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>한주 가족밥상 개인정보처리방침</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<style>
+/* 한 단 문서: 앱과 같은 초록 계열, 법적 문서답게 담백하게 */
+:root{
+  --bg:#F3F5F1; --surface:#FFFFFF; --line:#D5DCD3; --fg:#1E2A24; --muted:#5F6E66; --accent:#2F5D4A; --soft:#DCE9E1;
+  --font-display:"Gowun Batang","Nanum Myeongjo",serif;
+  --font-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A17; --surface:#1C2420; --line:#33403A; --fg:#E7EEE9; --muted:#9AA9A1; --accent:#7FBF9F; --soft:#25392F; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141A17; --surface:#1C2420; --line:#33403A; --fg:#E7EEE9; --muted:#9AA9A1; --accent:#7FBF9F; --soft:#25392F; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+main{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-size:13px;letter-spacing:.06em;color:var(--accent);font-weight:700}
+h1{font-family:var(--font-display);font-size:32px;line-height:1.3;margin:0;text-wrap:balance}
+.meta{color:var(--muted);font-size:14px;margin:0}
+.lead{background:var(--soft);border-radius:12px;padding:16px 18px;margin:0}
+section{display:flex;flex-direction:column;gap:8px}
+h2{font-size:18px;margin:0;text-wrap:balance}
+p,ul{margin:0}
+ul{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.tw{overflow-x:auto}
+footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+<main>
+  <header>
+    <span class="eyebrow">한주 가족밥상 · 개인정보처리방침</span>
+    <h1>한주 가족밥상 개인정보처리방침</h1>
+    <p class="meta">시행일 2026년 10월 25일 · 패키지 com.yoo.familydinner</p>
+  </header>
+
+  <p class="lead">한주 가족밥상은 가족이 함께 먹을 밥상을 미리 짜 두고 같은 식단표를 함께 보는 앱이에요. 회원가입이 없고, 이름·전화번호·이메일·위치 같은 개인정보를 받지 않아요.</p>
+
+  <section>
+    <h2>1. 앱이 다루는 정보</h2>
+    <div class="tw"><table>
+      <tr><th>정보</th><th>어디에 저장되나</th><th>왜 필요한가</th></tr>
+      <tr><td>식단, 메뉴 이름과 메모, 끼니 설정, 선택해서 적은 재료비·칼로리</td><td>사용자의 폰 (앱 내부 저장소)</td><td>식단표를 보여 주기 위해</td></tr>
+      <tr><td>위와 같은 식단 데이터 (가족 공유를 켠 경우만)</td><td>Google Firebase Realtime Database (싱가포르 지역)</td><td>같은 가족 코드를 가진 폰끼리 식단을 실시간으로 함께 보기 위해</td></tr>
+      <tr><td>의견 내용, 별점, 앱 버전, 폰 기종, 의견 번호 (의견을 보낸 경우만)</td><td>Google Forms와 개발자의 Google 스프레드시트</td><td>앱을 고치고 개선하기 위해</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>2. 가족 공유와 가족 코드</h2>
+    <ul>
+      <li>가족 공유는 사용자가 ‘새 가족 만들기’ 또는 ‘가족 코드로 참여’를 고를 때만 켜져요. ‘혼자 쓰기’를 고르면 식단은 폰 밖으로 나가지 않아요.</li>
+      <li>공유 식단은 무작위로 만든 24자리 가족 코드 아래에 저장돼요. 이 코드를 아는 사람만 그 식단을 읽고 고칠 수 있어요. 코드는 믿을 수 있는 가족에게만 보내 주세요.</li>
+      <li>공유 저장소에는 식단 정보만 있고, 누구의 식단인지 알 수 있는 이름이나 연락처는 없어요.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 보관 기간과 삭제</h2>
+    <ul>
+      <li>폰에 있는 식단은 앱의 ‘설정 → 처음 상태로 되돌리기’를 누르거나 앱을 지우면 삭제돼요.</li>
+      <li>공유 저장소의 식단은 ‘설정 → 가족 공유 → 공유 식단 삭제’로 바로 지울 수 있어요. 이후에는 내용 없이 ‘삭제됨’ 표시만 남아요.</li>
+      <li>‘코드 바꾸기’를 하면 예전 코드의 식단은 지워지고 새 코드로 옮겨져요.</li>
+      <li>보낸 의견을 지우고 싶으면 의견 번호를 적어 다시 의견을 보내 주세요. 확인 후 삭제해요.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. 제3자 제공과 광고</h2>
+    <p>정보를 팔거나 다른 회사에 넘기지 않아요. 광고, 분석 도구, 위치 추적을 쓰지 않아요. 저장과 전송에는 Google의 Firebase와 Google Forms만 쓰고, 이 서비스들은 Google 개인정보처리방침을 따라요. 전송은 모두 암호화된 연결(HTTPS)로 이루어져요.</p>
+  </section>
+
+  <section>
+    <h2>5. 아동</h2>
+    <p>이 앱은 아동을 대상으로 만들지 않았고, 아동의 개인정보를 일부러 받지 않아요.</p>
+  </section>
+
+  <section>
+    <h2>6. 문의</h2>
+    <p>궁금한 점이나 삭제 요청은 앱의 ‘의견’ 탭으로 보내 주시거나, Google Play 스토어의 한주 가족밥상 페이지에 있는 개발자 이메일로 연락해 주세요.</p>
+  </section>
+
+  <section>
+    <h2>7. 방침이 바뀔 때</h2>
+    <p>이 방침이 바뀌면 이 페이지에 시행일과 함께 알려 드려요.</p>
+  </section>
+
+  <footer>한주 가족밥상 · 가족이 함께 짜는 한 주 밥상</footer>
+</main>
+
+</body>
+</html>
