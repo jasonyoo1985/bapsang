@@ -406,17 +406,18 @@ nav.tabs button.on{background:var(--c-tab);color:#4A3410}
         <div class="grid2"><div class="field"><label for="dietFrom">시작</label><input id="dietFrom" type="date"></div><div class="field"><label for="dietTo">끝 (비워 두면 계속)</label><input id="dietTo" type="date"></div></div>
         <div class="btnrow"><button class="btn small" id="dietClear">가볍게 먹기 끝내기</button></div></div>
     </div>
-    <div class="sechead"><h2>백업</h2></div>
-    <p class="help">식단은 이 폰에 저장되고, 가족 공유 중이면 공유 저장소에도 올라가요. 혼자 쓰는 경우엔 가끔 복사해서 카톡 나에게 보내기 등에 보관해 두세요.</p>
+    <div class="sechead"><h2>백업과 복원</h2></div>
+    <p class="help">혼자 쓰는 경우 폰을 바꿀 때 쓰세요. 가족과 공유 중이면 필요 없어요.</p>
     <div class="card">
-      <div class="field"><label for="exportBox">백업 내용</label><textarea id="exportBox" class="code" readonly></textarea></div>
-      <div class="btnrow"><button class="btn primary" id="copyBtn">복사</button></div>
-    </div>
-    <div class="sechead"><h2>복원</h2></div>
-    <div class="card">
-      <div class="field"><label for="importBox">백업 내용 붙여넣기</label><textarea id="importBox" class="code"></textarea></div>
-      <div class="field"><label for="importFile">또는 백업 파일 선택</label><input id="importFile" type="file" accept=".json,.txt,application/json,text/plain"></div>
-      <div class="btnrow"><button class="btn primary" id="importBtn">복원하기</button></div>
+      <div class="btnrow" style="justify-content:flex-start;margin-top:0"><button class="btn primary" id="bkSend">백업 보내기</button><button class="btn" id="bkPick">백업 파일로 복원</button></div>
+      <p class="help" style="margin:8px 0 0">[백업 보내기]로 카톡 ‘나에게 보내기’나 메일에 파일을 보내 두세요. 새 폰에서는 그 파일을 저장한 뒤 [백업 파일로 복원]을 누르면 돼요.</p>
+      <input id="importFile" type="file" accept=".json,.txt,application/json,text/plain" hidden>
+      <details style="margin-top:10px"><summary>직접 붙여넣기</summary>
+        <div class="field" style="margin-top:8px"><label for="exportBox">백업 내용</label><textarea id="exportBox" class="code" readonly></textarea></div>
+        <div class="btnrow"><button class="btn small" id="copyBtn">복사</button></div>
+        <div class="field"><label for="importBox">백업 내용 붙여넣기</label><textarea id="importBox" class="code"></textarea></div>
+        <div class="btnrow"><button class="btn small" id="importBtn">복원하기</button></div>
+      </details>
     </div>
     <div class="sechead"><h2>의견과 공유</h2></div>
     <div class="card"><p class="help" style="margin:0">불편한 점이나 원하는 기능을 들려주세요. 마음에 드셨다면 다른 가족에게도 알려 주세요.</p>
@@ -1236,10 +1237,16 @@ const dietSave=()=>{const f=$('#dietFrom').value,t=$('#dietTo').value;S.settings
 $('#dietFrom').onchange=dietSave;$('#dietTo').onchange=dietSave;$('#dietClear').onclick=()=>{$('#dietFrom').value='';$('#dietTo').value='';dietSave()};
 $('#setSave').onchange=e=>{S.settings.saving=Math.max(0,parseInt(e.target.value,10)||0);save();render()};
 $('#copyBtn').onclick=()=>copyText($('#exportBox').value,'백업 내용을 복사했어요');
-$('#importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#importBox').value=r.result;toast('불러왔어요. ‘복원하기’를 누르세요')};r.readAsText(f)};
-$('#importBtn').onclick=()=>{let data;try{data=JSON.parse($('#importBox').value)}catch(e){return toast('백업 내용 형식이 올바르지 않아요')}
+function bkName(){const d=new Date(),z=n=>String(n).padStart(2,'0');return `bapsang-backup-${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}.json`}
+$('#bkSend').onclick=()=>{const name=bkName(),data=JSON.stringify(S);
+  try{if(window.AndroidShare&&window.AndroidShare.shareFile){window.AndroidShare.shareFile(name,data);return}}catch(e){}
+  try{const u=URL.createObjectURL(new Blob([data],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(u)},5000);toast('백업 파일을 내려받았어요')}catch(e){copyText(data,'백업 내용을 복사했어요')}};
+$('#bkPick').onclick=()=>{$('#importFile').value='';$('#importFile').click()};
+function doRestore(text){let data;try{data=JSON.parse(text)}catch(e){return toast('백업 파일 형식이 올바르지 않아요')}
   if(!data||!Array.isArray(data.dishes))return toast('식단표 백업이 아닌 것 같아요');
-  confirmBox('지금 데이터를 백업 내용으로 바꿀까요?','복원',()=>{S=normalize(data.v===2?data:migrateV1(data));save();render();$('#importBox').value='';toast('복원했어요')})};
+  confirmBox('지금 데이터를 백업 내용으로 바꿀까요?','복원',()=>{S=normalize(data.v===2?data:migrateV1(data));save();render();$('#importBox').value='';toast('복원했어요')})}
+$('#importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>doRestore(String(r.result||''));r.onerror=()=>toast('파일을 읽지 못했어요');r.readAsText(f)};
+$('#importBtn').onclick=()=>doRestore($('#importBox').value);
 $('#resetBtn').onclick=()=>confirmBox('모든 데이터를 지우고 처음 상태로 돌릴까요?','초기화',()=>{S=normalize(seed());save();render();toast('초기화했어요')});
 
 
@@ -1428,7 +1435,7 @@ function guide(){
     <ul><li>화면을 옆으로 밀면 다음 탭으로 넘어가요.</li>
       <li>설정 탭에서 내 이름(예: 엄마)을 정하면, 가족 폰에 ‘엄마가 화요일 식단을 바꿨어요’처럼 보여요.</li>
       <li>한 주의 시작(일요일/월요일)과 글자 크기도 설정 탭에서 바꿀 수 있어요.</li>
-      <li>앱이나 폰을 바꾸기 전에는 설정 탭 ‘백업’에서 복사해 두세요.</li>
+      <li>혼자 쓰는데 폰을 바꾼다면, 설정 탭 [백업 보내기]로 카톡 ‘나에게 보내기’에 파일을 보내 두고 새 폰에서 [백업 파일로 복원]을 누르세요. 가족과 공유 중이면 가족 코드로 참여만 하면 돼요.</li>
       <li>불편한 점은 설정 탭 ‘의견 보내기’로 남겨 주세요.</li></ul>
   </div>`,()=>{$('#gdClose').onclick=closeModal});
 }
@@ -1465,7 +1472,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='1.4';
+const APP_VERSION='1.5';
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
