@@ -276,6 +276,7 @@ nav.tabs button{font-size:11.5px;padding:7px 0}
 .caln{font-size:10.5px;line-height:1.25;background:var(--c-main);color:var(--c-main-ink);border-radius:4px;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .calt{font-size:10.5px;border-radius:4px;padding:1px 3px;white-space:nowrap}
 .calt.out{background:#F3D59E;color:#4D3410}.calt.away{background:#A9D1CC;color:#203F3C}
+.absline{display:block;text-align:left;border:0;background:#FFF1E6;color:#7C2D12;border-radius:10px;padding:6px 10px;font-size:13px;width:100%}
 .calx{font-size:10px;color:#9A3412;font-weight:600}
 .eatbox{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px}
 .eatrow{display:flex;flex-direction:column;gap:6px}.eathead{font-size:15px}
@@ -832,9 +833,9 @@ function prepNotes(k){
 }
 
 function eatBlock(t,meals){
-  const fam=famList(),me=nameOf(DEV),hr=new Date().getHours();
+  const fam=famList(),me=nameOf(DEV),hr=new Date().getHours(),now=todayISO();
   const rows=meals.map(m=>{
-    const abs=absOf(t,m),no=abs.filter(a=>a.st==='no').length,mine=abs.find(a=>a.n===me),locked=hr>=MEAL_END[m];
+    const abs=absOf(t,m),no=abs.filter(a=>a.st==='no').length,mine=abs.find(a=>a.n===me),locked=t<now||(t===now&&hr>=MEAL_END[m]);
     const cnt=fam.length>=2?` · ${fam.length-no}명이 먹어요`:'';
     const btns=locked?'':`<div class="eatbtns"><button class="btn eatb${mine&&mine.st==='no'?' on':''}" data-eat="${t}|${m}|no">${mine&&mine.st==='no'?'✓ ':''}나 못 먹어요</button><button class="btn eatb${mine&&mine.st==='late'?' on':''}" data-eat="${t}|${m}|late">${mine&&mine.st==='late'?'✓ ':''}나 늦게 먹어요</button></div>`;
     const lines=abs.map(a=>{const ak=ackers(t,m,a.n);
@@ -842,16 +843,19 @@ function eatBlock(t,meals){
       return `<div class="eatwho ${a.st}"><span><b>${esc(a.n)}</b> ${absWord(a.st)}${ak.length?` <small>✓ ${esc(ak.join('·'))} 확인</small>`:''}</span>${ackBtn}</div>`}).join('');
     const tools=`<div class="btnrow">${mine?`<button class="btn small" data-eatshare="${t}|${m}">가족 단톡에 알리기</button>`:''}${locked?'':`<button class="btn small" data-eatother="${t}|${m}">다른 가족 표시</button>`}</div>`;
     return `<div class="eatrow"><div class="eathead"><b>${MEALS[m]}</b>${cnt}</div>${lines}${btns}${tools}</div>`}).join('');
-  return `<div class="eatbox"><span class="rowlabel">못 먹거나 늦게 먹는 가족이 있으면 눌러 주세요</span>${rows}</div>`;
+  return `<div class="eatbox"><span class="rowlabel">${t>now?'이날 못 먹거나 늦게 먹는 가족이 있으면 미리 눌러 주세요':'못 먹거나 늦게 먹는 가족이 있으면 눌러 주세요'}</span>${rows}</div>`;
 }
+let eatBack=null;
 function eatSheet(t,m){
   const fam=famList(),abs=absOf(t,m);
   openModal(`<div class="sheethead"><h2>${md(t)} ${MEALS[m]} · 가족 표시</h2><button class="btn primary small" id="edClose">완료</button></div>
     <p class="help">폰이 없거나 말로 알려 준 가족을 대신 표시해요.</p>
-    ${fam.map(f=>{const a=abs.find(x=>x.n===f.n),st=a?a.st:'';return `<div class="row"><span class="rowlabel">${esc(f.n)}</span><div class="seg mode">${[['','먹어요'],['late','늦게'],['no','못 먹어요']].map(([v,l])=>`<button data-eatsh="${t}|${m}|${esc(f.n)}|${v}" class="${st===v?'on':''}">${l}</button>`).join('')}</div></div>`}).join('')||'<div class="awaynote">설정에서 가족 이름을 먼저 넣어 주세요.</div>'}`,sh=>{$('#edClose').onclick=closeModal});
+    ${fam.map(f=>{const a=abs.find(x=>x.n===f.n),st=a?a.st:'';return `<div class="row"><span class="rowlabel">${esc(f.n)}</span><div class="seg mode">${[['','먹어요'],['late','늦게'],['no','못 먹어요']].map(([v,l])=>`<button data-eatsh="${t}|${m}|${esc(f.n)}|${v}" class="${st===v?'on':''}">${l}</button>`).join('')}</div></div>`}).join('')||'<div class="awaynote">설정에서 가족 이름을 먼저 넣어 주세요.</div>'}`,sh=>{$('#edClose').onclick=()=>eatBack?editDay(eatBack):closeModal()});
 }
+const refreshEd=()=>{const k=document.querySelector('#modalRoot .sheet')?.dataset.day;if(k)editDay(k)};
+const absLines=k=>['bf','lunch','dn'].flatMap(m=>absOf(k,m).map(a=>`${MEALS[m]} ${a.n} ${absWord(a.st)}`));
 function eatSet(t,m,n,st,quiet){
-  setAbs(n,t,m,st);render();
+  setAbs(n,t,m,st);render();refreshEd();
   if(st==='no'){const fam=famList();if(fam.length>=2&&fam.every(f=>absOf(t,m).some(a=>a.n===f.n&&a.st==='no'))&&t===todayISO()){
     confirmBox(`가족 모두 ${MEALS[m]}을 못 먹어요. ${m==='dn'?'메뉴를 내일로 미룰까요?':MEALS[m]+' 메뉴를 이날에서 뺄까요?'}`,m==='dn'?'내일로 미루기':'뺄게요',()=>{m==='dn'?setMode(t,'away'):setMealOn(t,m,false)})}}
   else if(!quiet&&st==='late')toast('늦게 먹는다고 가족에게 보였어요');
@@ -898,7 +902,7 @@ function renderToday(){
   else tmLine='내일 주 메뉴가 아직 안 정해졌어요.';
   h.push(`<div class="sechead"><h2>미리 준비</h2></div><div class="card">
     ${prepT.length?`<div class="row"><span class="rowlabel">오늘</span>${prepT.map(x=>`<div>• ${esc(x)}</div>`).join('')}</div>`:''}
-    <div class="row"><span class="rowlabel">내일 ${md(tm)}(${dow(tm)})</span><div>${tmLine}</div>${prepTm.map(x=>`<div>• ${esc(x)}</div>`).join('')}
+    <div class="row"><span class="rowlabel">내일 ${md(tm)}(${dow(tm)})</span><div>${tmLine}</div>${[...prepTm,...absLines(tm).map(x=>'빠짐 · '+x)].map(x=>`<div>• ${esc(x)}</div>`).join('')}
     ${!(tmDay&&(tmDay.away||tmDay.trip||tmDay.mains.length))?`<div><button class="btn small" data-edit="${tm}">내일 메뉴 정하기</button></div>`:''}</div></div>`);
   // 4) 다음 주 계획 알림 (목~일)
   const wi=(parse(t).getDay()-PREFS.ws+7)%7;
@@ -984,7 +988,7 @@ function renderPlan(){
     html.push(`<article class="day${k===t?' today':''}" data-k="${k}">
       <div class="dayhead"><span class="dayname">${dow(k)}요일</span><span class="daydate">${md(k)}</span>${k===t?'<span class="badge">오늘</span>':''}${hol?`<span class="pill hol">${esc(hol)}</span>`:''}${inDiet(k)?'<span class="pill ok">가볍게</span>':''}${day.status==='done'?st:''}${dayKcal(day,k)?`<span class="daydate" style="margin-left:auto">약 ${dayKcal(day,k).toLocaleString()}kcal</span>`:''}</div>
       ${day.memo?`<button class="daymemo" data-edit="${k}" data-focus="memo">메모 · ${esc(day.memo)}</button>`:''}${by?`<span class="whoby">✎ ${esc(by)}${ga(by)} 고침</span>`:''}
-      ${seg}${body}
+      ${absLines(k).length?`<button class="absline" data-edit="${k}" data-focus="eat">빠짐 · ${absLines(k).map(esc).join(' / ')}</button>`:''}${seg}${body}
       ${day.memo?'':`<button class="memoadd" data-edit="${k}" data-focus="memo">+ 이날 메모</button>`}
     </article>`);
   }
@@ -1057,7 +1061,7 @@ function openModal(html,onMount){
   $('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal()});
   onMount&&onMount($('#modalRoot .sheet'));
 }
-function closeModal(){$('#modalRoot').innerHTML='';edFocus=null;setTimeout(()=>{try{if(!$('#modalRoot').innerHTML&&localStorage.getItem('wd.onboard')&&!nameOf(DEV))ensureName()}catch(e){}},0);if(pendingRemote){const d=pendingRemote;pendingRemote=null;applyRemote(d)}}
+function closeModal(){$('#modalRoot').innerHTML='';edFocus=null;eatBack=null;setTimeout(()=>{try{if(!$('#modalRoot').innerHTML&&localStorage.getItem('wd.onboard')&&!nameOf(DEV))ensureName()}catch(e){}},0);if(pendingRemote){const d=pendingRemote;pendingRemote=null;applyRemote(d)}}
 function confirmBox(msg,okLabel,onOk){
   openModal(`<h2>${esc(msg)}</h2><div class="btnrow"><button class="btn" id="cNo">취소</button><button class="btn danger" id="cYes">${esc(okLabel)}</button></div>`,()=>{$('#cNo').onclick=closeModal;$('#cYes').onclick=()=>{closeModal();onOk()}});
 }
@@ -1081,27 +1085,28 @@ function editDay(k){
   const sideBtn=d=>{const on=day.sides.includes(d.id);
     return `<button class="pick${on?' sel':''}" data-pickside="${k}|${d.id}"><b>${esc(d.name)}</b><small>${d.fav?'★ ':''}${d.out?'<span class="tag-warn">떨어짐</span>':'&nbsp;'}</small></button>`};
   const defaults=S.dishes.filter(d=>d.type==='side'&&d.isDefault).map(d=>d.name).join('·');
-  const xm=day.trip?[]:extraMeals(k),two=xm.length>0,dn=dnOn(day);
+  const xm=day.trip?[]:extraMeals(k),two=xm.length>0,dn=dnOn(day);const xm0=extraMeals;
   const lunchBtn=(d,ml)=>{const on=day[ml].some(m=>m.dishId===d.id);const left=d.type==='main'?stockLeft(d.id):0;
     return `<button class="pick${d.type==='main'?' main':''}${on?' sel':''}" data-pickmeal="${k}|${ml}|${d.id}"><b>${esc(d.name)}</b><small>${d.fav?'★ ':''}${left?`<span class="tag-ok">재고 ${left}끼</span>`:'&nbsp;'}</small></button>`};
   // 지난 날: 그날 실제로 어땠는지 고칠 수 있음 (메뉴가 다른 날로 밀리지는 않음)
   const past=k<todayISO();const pm=day.trip?'trip':day.status==='out'?'out':day.away?'away':'home';
   const pastSeg=past?`<div class="row"><span class="rowlabel">그날 기록 고치기</span><div class="seg mode">${[['home','먹음'],['away','회식·약속'],['out','외식'],['trip','집 비움']].map(([m,l])=>`<button data-pastmode="${k}|${m}" class="${pm===m?'on m-'+m:''}">${l}</button>`).join('')}</div></div>`:'';
-  if(edFocus&&edFocus!=='memo'&&(day.trip||!(edFocus.startsWith('dn|')?dn:xm.includes(edFocus.split('|')[0]))))edFocus=null;
-  const F=edFocus,show=f=>!F||F===f;
+  if(edFocus&&edFocus!=='memo'&&edFocus!=='eat'&&(day.trip||!(edFocus.startsWith('dn|')?dn:xm.includes(edFocus.split('|')[0]))))edFocus=null;
+  const F=edFocus,show=f=>!F||F===f,only=F==='memo'||F==='eat';
+  const eatM=day.trip?[]:[...xm0(k),...(dnOn(day)&&!day.away&&day.status!=='out'?['dn']:[])];
   if(day.trip){openModal(`<div class="sheethead"><h2>${md(k)} ${dow(k)}요일</h2><button class="btn primary small" id="edClose">완료</button></div>${memoField}${pastSeg}<div class="awaynote">집 비움인 날이에요.${past?'':' 식단표에서 ‘함께’를 누르면 계획할 수 있어요.'}</div>`,sheet=>{$('#edClose').onclick=closeModal;sheet.dataset.day=k});return}
   const dinner=!dn?'':`${!show('dn|main')?'':day.away||day.status==='out'?`<div class="awaynote">${day.away?'회식·약속':'외식'}인 날이에요. 밑반찬만 고르면 돼요.</div>`:`
     <div class="row"><span class="rowlabel">${two?'저녁 ':''}주 메뉴 · 눌러서 고르기</span>${quick('dn','main')}<div class="pickgrid">${mains.map(mainBtn).join('')}</div></div>`}
     ${show('dn|side')?`<div class="row"><span class="rowlabel">${two?'저녁 ':''}밑반찬 · 매일 기본(${esc(defaults)})은 자동</span>${quick('dn','side')}<div class="pickgrid">${sides.map(sideBtn).join('')}</div></div>`:''}`;
   const [fml,ft]=(F||'').split('|');
-  const ttl=F==='memo'?'이날 메모':F?`${MEALS[fml]} ${ft==='main'?'주 메뉴':'반찬'}`:two||!dn?'식사':'저녁';
+  const ttl=F==='memo'?'이날 메모':F==='eat'?'빠지는 가족':F?`${MEALS[fml]} ${ft==='main'?'주 메뉴':'반찬'}`:two||!dn?'식사':'저녁';
   const full=F?`<button class="btn small" data-edfull="${k}">이날 전체 보기</button>`:'';
-  const newBtns=F==='memo'?'':`<div class="btnrow">${!F||ft==='main'?'<button class="btn small" data-new="main">새 주 메뉴</button>':''}${!F||ft==='side'?'<button class="btn small" data-new="side">새 밑반찬</button>':''}${full}</div>`;
+  const newBtns=only?(F==='eat'?full&&`<div class="btnrow">${full}</div>`:''):`<div class="btnrow">${!F||ft==='main'?'<button class="btn small" data-new="main">새 주 메뉴</button>':''}${!F||ft==='side'?'<button class="btn small" data-new="side">새 밑반찬</button>':''}${full}</div>`;
   openModal(`<div class="sheethead"><h2>${md(k)} ${dow(k)}요일 ${ttl}${past?' (지난 날)':''}</h2><button class="btn primary small" id="edClose">완료</button></div>${F?'':pastSeg}
-    ${show('memo')?memoField:''}${F?'':dayAbs(k)}${show('dn|main')?wishRow:''}
-    ${F==='memo'?'':xm.map(ml=>`${show(ml+'|main')?`<div class="row"><span class="rowlabel">${MEALS[ml]} 주 메뉴 · 눌러서 고르기</span>${quick(ml,'main')}<div class="pickgrid">${mains.map(d=>lunchBtn(d,ml)).join('')}</div></div>`:''}
+    ${show('memo')?memoField:''}${show('eat')?(k>=todayISO()?(eatM.length?eatBlock(k,eatM):''):dayAbs(k)):''}${show('dn|main')?wishRow:''}
+    ${only?'':xm.map(ml=>`${show(ml+'|main')?`<div class="row"><span class="rowlabel">${MEALS[ml]} 주 메뉴 · 눌러서 고르기</span>${quick(ml,'main')}<div class="pickgrid">${mains.map(d=>lunchBtn(d,ml)).join('')}</div></div>`:''}
     ${show(ml+'|side')?`<div class="row"><span class="rowlabel">${MEALS[ml]} 반찬</span>${quick(ml,'side')}<div class="pickgrid">${sides.map(d=>lunchBtn(d,ml)).join('')}</div></div>`:''}`).join('')}
-    ${F==='memo'?'':dinner}${!F&&!xm.length&&!dn?'<div class="awaynote">이날은 체크된 끼니가 없어요. 주간 계획에서 아침·점심·저녁을 체크해 주세요.</div>':''}
+    ${only?'':dinner}${!F&&!xm.length&&!dn?'<div class="awaynote">이날은 체크된 끼니가 없어요. 주간 계획에서 아침·점심·저녁을 체크해 주세요.</div>':''}
     ${newBtns}`,sheet=>{
       $('#edClose').onclick=closeModal;sheet.dataset.day=k;
     });
@@ -1261,10 +1266,10 @@ document.addEventListener('click',e=>{
     const go=()=>eatSet(t,m,me,st);
     if(t===todayISO()&&new Date().getHours()>=dlHour(m))return confirmBox('이미 장을 봤을 수 있어요. 그래도 표시할까요?','표시하기',go);
     return go()}
-  if(ds.eatack){const [t,m,n]=ds.eatack.split('|');setAck(t,m,n);render();return toast(`${n}에게 확인했다고 보였어요`)}
+  if(ds.eatack){const [t,m,n]=ds.eatack.split('|');setAck(t,m,n);render();refreshEd();return toast(`${n}에게 확인했다고 보였어요`)}
   if(ds.eatshare){const [t,m]=ds.eatshare.split('|'),a=absOf(t,m).find(x=>x.n===nameOf(DEV));if(!a)return;
     return shareOut(`한주 가족밥상 · ${t===todayISO()?'오늘':md(t)} ${MEALS[m]} ${a.n} ${absWord(a.st)}`)}
-  if(ds.eatother){const [t,m]=ds.eatother.split('|');return eatSheet(t,m)}
+  if(ds.eatother){const [t,m]=ds.eatother.split('|');eatBack=b.closest('.sheet')?.dataset.day||null;return eatSheet(t,m)}
   if(ds.eatsh){const [t,m,n,st]=ds.eatsh.split('|');setAbs(n,t,m,st);render();eatSheet(t,m);
     if(st==='no'){const fam=famList();if(fam.length>=2&&fam.every(f=>absOf(t,m).some(a=>a.n===f.n&&a.st==='no'))&&t===todayISO())toast('가족 모두 못 먹어요. 오늘 밥상에서 메뉴를 미룰 수 있어요')}return}
   if(ds.famdel){const mem=S.members||{};Object.keys(mem).forEach(id=>{if(mem[id].p&&mem[id].n===ds.famdel){mem[id]=Object.assign({},mem[id],{n:'',u:Date.now()})}});save();renderMore();return}
@@ -1382,13 +1387,13 @@ function changeMsg(oldU,oldC,oldW){
 function applyRemote(data){
   // 이 폰에서 아직 아무것도 안 바꿨으면(새로 설치) 공유 데이터를 그대로 받음
   if(!S.updatedAt){S=normalize(data);base=snap(S);saveLocal();autoDone();render();return}
-  const absSig=()=>{const o={},t=todayISO();[t,addDays(t,1)].forEach(k=>['bf','lunch','dn'].forEach(ml=>absOf(k,ml).forEach(a=>{o[k+'|'+ml+'|'+a.n]=a.st})));return o};
+  const absSig=()=>{const o={},t=todayISO();Array.from({length:14},(_,i)=>addDays(t,i)).forEach(k=>['bf','lunch','dn'].forEach(ml=>absOf(k,ml).forEach(a=>{o[k+'|'+ml+'|'+a.n]=a.st})));return o};
   const oldAbs=absSig();const before=JSON.stringify(S),m=merge(S,normalize(data));
   const oldU=Object.fromEntries(Object.entries(S.days).map(([k,v])=>[k,v.u||0])),oldC=new Set(S.cart.map(x=>x.id)),oldW=new Set(S.wish.map(x=>x.id));
   S=m.st;base=snap(S);saveLocal();autoDone();
   if(JSON.stringify(S)!==before){render();
     const na=Object.entries(absSig()).find(([key,st])=>oldAbs[key]!==st&&key.split('|')[2]!==nameOf(DEV)),t0=todayISO();
-    if(na&&PREFS.an!==0){const [k,ml,n]=na[0].split('|');toast(`${n} ${k===t0?'오늘':'내일'} ${MEALS[ml]} ${na[1]==='late'?'늦게 먹어요':'못 먹어요'}`)}
+    if(na&&PREFS.an!==0){const [k,ml,n]=na[0].split('|');toast(`${n} ${k===t0?'오늘':k===addDays(t0,1)?'내일':md(k)+'('+dow(k)+')'} ${MEALS[ml]} ${na[1]==='late'?'늦게 먹어요':'못 먹어요'}`)}
     else if(data.by!==DEV)toast(changeMsg(oldU,oldC,oldW))}
   if(m.mine)push(true);
 }
@@ -1521,6 +1526,7 @@ function guide(){
       <li>‘한 주 자동으로 짜기’를 누르면 빈 칸을 즐겨찾기 메뉴로 채워요. 마음에 안 드는 날만 바꾸면 돼요.</li>
       <li>날짜를 누르면 메뉴를 고르는 창이 열려요. 없는 메뉴는 ‘바로 입력’에 적으면 메뉴에도 저장돼요. ★와 최근 먹은 메뉴가 먼저 보여요.</li>
       <li>맨 위 날짜 줄을 누르면 그날로 이동해요. 점이 있는 날은 아직 메뉴가 비어 있어요.</li>
+      <li>달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시하면, 가족이 그날 식단을 미리 알 수 있어요.</li>
       <li>‘+ 이날 메모’에 ‘할머니 오심’처럼 적어 두면 가족 모두 함께 봐요.</li>
       <li>‘지난주 식단 가져오기’, ‘카톡용 식단 복사’도 있어요.</li>
       <li>새 날짜의 기본 끼니는 설정 탭 ‘우리 가족 식사’에서 정해요.</li></ul>
@@ -1576,7 +1582,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='2.0';
+const APP_VERSION='2.1';
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
