@@ -1,7 +1,9 @@
 {
- "latest": "1.9",
+ "latest": "2.0",
  "notes": [
-  "+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."
+  "가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.",
+  "가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.",
+  "앱을 처음 켤 때 가족에게 보일 이름을 적어요."
  ],
  "install": "지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)\n1. 테스터 그룹 가입: [그룹 가입]\nhttps://groups.google.com/g/bapsang-testers\n2. 테스터 등록: [BECOME A TESTER]\nhttps://play.google.com/apps/testing/com.yoo.familydinner\n3. 같은 화면 아래 [download it on Google Play]로 설치"
 }
