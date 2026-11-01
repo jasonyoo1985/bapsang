@@ -468,7 +468,7 @@ nav.tabs button.on{background:var(--c-tab);color:#4A3410}
       <button class="btn primary" id="fbSend" disabled>보내기</button>
     </div>
     <p class="help">익명으로 전달되고 개발자만 볼 수 있어요. 고칠 때 참고하도록 앱 버전과 폰 기종만 함께 보내요. 몇 번이든 다시 보낼 수 있어요. 개발자가 답을 남기면 아래에 보여요.</p>
-    <div class="sechead"><h2>내가 보낸 의견</h2></div>
+    <div class="sechead"><h2>내가 보낸 의견</h2><button class="btn small" id="fbRefresh">답변 확인</button></div>
     <div class="list" id="fbList"></div>
   </section>
 </div>
@@ -1582,7 +1582,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='2.1';
+const APP_VERSION='2.2';
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
@@ -1591,8 +1591,20 @@ function parseCSV(t){const rows=[];let row=[],cur='',q=false;for(let i=0;i<t.len
   if(q){if(ch==='"'){if(t[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
   else if(ch==='"')q=true;else if(ch===','){row.push(cur);cur=''}else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur=''}else if(ch!=='\r')cur+=ch}
   if(cur||row.length){row.push(cur);rows.push(row)}return rows}
-function loadReplies(){if(!FEEDBACK.replies||!fbLoad().length)return;
-  fetch(FEEDBACK.replies+(FEEDBACK.replies.includes('?')?'&':'?')+'t='+Date.now()).then(r=>r.text()).then(t=>{const m={};parseCSV(t).slice(1).forEach(([id,a])=>{if(id&&a)m[id.trim().toUpperCase()]=a.trim()});fbReplies=m;renderFb()}).catch(()=>{})}
+// 시트 '답변' 탭(번호, 답변)을 웹에 게시한 CSV를 읽어 번호가 같은 의견 아래에 보여 줌. 설정 탭을 열 때·앱으로 돌아올 때·[답변 확인]을 누를 때 새로 읽음
+let repT=0;
+const repKey=v=>String(v||'').replace(/^\uFEFF/,'').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+function loadReplies(manual){
+  if(!FEEDBACK.replies||!fbLoad().length)return;
+  if(!manual&&Date.now()-repT<20000)return;repT=Date.now();
+  fetch(FEEDBACK.replies+(FEEDBACK.replies.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{
+    if(/^\s*</.test(t))throw 0;
+    const rows=parseCSV(t);const hd=(rows[0]||[]).map(x=>String(x).replace(/^\uFEFF/,'').trim());
+    const ci=Math.max(0,hd.indexOf('번호')),ai=hd.indexOf('답변')>=0?hd.indexOf('답변'):ci+1;
+    const m={};rows.slice(1).forEach(r=>{const id=repKey(r[ci]),a=String(r[ai]||'').trim();if(id&&a)m[id]=a});
+    fbReplies=m;renderFb();
+    if(manual){const n=fbLoad().filter(x=>m[repKey(x.id)]).length;toast(n?`개발자 답변 ${n}개를 확인했어요`:'아직 개발자 답변이 없어요')}
+  }).catch(()=>{if(manual)toast('답변을 불러오지 못했어요. 인터넷 연결을 확인해 주세요')})}
 let fbStar=0;
 const fbLoad=()=>{try{return JSON.parse(localStorage.getItem('wd.fb')||'[]')}catch(e){return []}};
 function deviceName(){const m=navigator.userAgent.match(/Android ([\d.]+);\s*([^;)]+)/);return m?`Android ${m[1]} · ${m[2].replace(/ Build.*/,'')}`:navigator.platform||'기타'}
@@ -1600,8 +1612,9 @@ function renderFb(){
   $('#fbStars').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.star<=fbStar));
   $('#fbSend').disabled=!$('#fbText').value.trim();
   const list=fbLoad();
-  $('#fbList').innerHTML=list.length?list.slice().reverse().map(x=>`<div class="fbitem"><div class="fbmeta"><span>${esc(x.date)} · 번호 ${esc(x.id)} · ${x.sent?'전달됨':'보내지 못함'}</span>${x.star?`<span class="fbstar">${'★'.repeat(x.star)}</span>`:''}</div><p>${esc(x.text)}</p>${fbReplies[x.id]?`<div class="fbreply"><b>개발자 답변</b><p>${esc(fbReplies[x.id])}</p></div>`:''}</div>`).join(''):'<div class="empty">아직 보낸 의견이 없어요</div>';
+  $('#fbList').innerHTML=list.length?list.slice().reverse().map(x=>`<div class="fbitem"><div class="fbmeta"><span>${esc(x.date)} · 번호 ${esc(x.id)} · ${x.sent?'전달됨':'보내지 못함'}</span>${x.star?`<span class="fbstar">${'★'.repeat(x.star)}</span>`:''}</div><p>${esc(x.text)}</p>${fbReplies[repKey(x.id)]?`<div class="fbreply"><b>개발자 답변</b><p>${esc(fbReplies[repKey(x.id)])}</p></div>`:''}</div>`).join(''):'<div class="empty">아직 보낸 의견이 없어요</div>';
 }
+$('#fbRefresh').onclick=()=>loadReplies(true);
 $('#fbStars').onclick=e=>{const b=e.target.closest('[data-star]');if(!b)return;fbStar=+b.dataset.star===fbStar?0:+b.dataset.star;renderFb()};
 $('#fbText').oninput=()=>{$('#fbSend').disabled=!$('#fbText').value.trim()};
 $('#fbSend').onclick=()=>{
@@ -1621,7 +1634,7 @@ renderFb();loadReplies();
 window.androidBack=function(){if($('#modalRoot').innerHTML){closeModal();return true}if(curTab==='fb'){goTab('more');return true}if(curTab!=='today'){goTab('today');return true}return false};
 if(!FEATURE_SHOP)document.querySelector('#tabs [data-tab="shop"]').hidden=true;
 autoDone();saveLocal();
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate();loadInstall()}});loadInstall();loadKcalDb();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate();loadInstall();loadReplies()}});loadInstall();loadKcalDb();
 render();renderSync();startSync();
 // PC 등에서 #join-가족코드 주소로 열면 바로 참여 창
 const jm=location.hash.match(/^#join-([a-z0-9]{20,})$/);

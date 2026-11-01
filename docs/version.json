@@ -1,9 +1,8 @@
 {
- "latest": "2.1",
+ "latest": "2.2",
  "notes": [
-  "달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.",
-  "미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.",
-  "다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."
+  "개발자 답변이 앱에 안 보이던 문제를 고쳤어요.",
+  "의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."
  ],
  "install": "지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)\n1. 테스터 그룹 가입: [그룹 가입]\nhttps://groups.google.com/g/bapsang-testers\n2. 테스터 등록: [BECOME A TESTER]\nhttps://play.google.com/apps/testing/com.yoo.familydinner\n3. 같은 화면 아래 [download it on Google Play]로 설치"
 }
