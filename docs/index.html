@@ -276,6 +276,8 @@ nav.tabs button{font-size:11.5px;padding:7px 0}
 .caln{font-size:10.5px;line-height:1.25;background:var(--c-main);color:var(--c-main-ink);border-radius:4px;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .calt{font-size:10.5px;border-radius:4px;padding:1px 3px;white-space:nowrap}
 .calt.out{background:#F3D59E;color:#4D3410}.calt.away{background:#A9D1CC;color:#203F3C}
+.addrow2{display:flex;gap:8px;flex-wrap:wrap}.pill.cnt{background:#FFE9D6;color:#7C2D12}
+.verrow{display:flex;justify-content:space-between;align-items:center;font-size:15px}.verhist b{display:block;margin-top:10px;font-size:14px}.verhist ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
 .absline{display:block;text-align:left;border:0;background:#FFF1E6;color:#7C2D12;border-radius:10px;padding:6px 10px;font-size:13px;width:100%}
 .calx{font-size:10px;color:#9A3412;font-weight:600}
 .eatbox{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px}
@@ -442,6 +444,8 @@ nav.tabs button.on{background:var(--c-tab);color:#4A3410}
       <p>한주 가족밥상은 가족이 함께 먹을 밥상을 한 주 단위로 미리 짜 두고, 같은 식단표를 함께 보는 앱이에요. 메뉴 하나로 대화가 열리고, 계획한 만큼 장을 봐서 과소비도 줄어요.</p>
       <ul><li>가족이 함께 먹는 밥상이 중심이에요.</li><li>처음 메뉴만 등록하면 입력은 거의 없어요.</li><li>칼로리·영양·재료비는 가족 밥상을 돌아보는 참고용이에요. 다이어트 앱이 아니에요.</li></ul>
     </div>
+    <div class="sechead"><h2>앱 버전</h2></div>
+    <div class="card" id="verCard"></div>
     <div class="sechead"><h2>초기화</h2></div>
     <div class="card">
       <p class="help" style="margin:0">식단·메뉴·메모를 모두 지우고 처음으로 돌아가요.</p>
@@ -654,6 +658,8 @@ function setAbs(n,k,m,st){const mem=S.members=S.members||{},key=k+'|'+m,now=Date
 function setAck(k,m,n){const mem=S.members=S.members||{};const v=Object.assign({},mem[DEV]||{});v.k=Object.assign({},v.k||{});v.k[k+'|'+m+'|'+n]=Date.now();v.u=Date.now();mem[DEV]=v;pruneMem();save()}
 function setMyName(n){n=n.replace(/[|]/g,'');const mem=S.members=S.members||{};const v=Object.assign({},mem[DEV]||{});v.n=n;v.u=Date.now();mem[DEV]=v;save()}
 function shareOut(t,okMsg){if(window.AndroidShare)return window.AndroidShare.share(t);if(navigator.share)return navigator.share({text:t}).catch(()=>{});copyText(t,okMsg||'복사했어요. 카톡에 붙여 넣어 주세요')}
+const allAbsent=(k,m)=>{const fam=famList();return fam.length>=2&&fam.every(f=>absOf(k,m).some(a=>a.n===f.n&&a.st==='no'))};
+const headPills=k=>['bf','lunch','dn'].map(m=>{const n=absOf(k,m).length;if(!n)return '';const c=famList().length-absOf(k,m).filter(a=>a.st==='no').length;return famList().length>=2?`<span class="pill cnt">${MEALS[m]} ${Math.max(0,c)}명</span>`:''}).join('');
 const absWord=st=>st==='late'?'늦게 먹어요 (남겨 주세요)':'못 먹어요';
 const dlHour=m=>PREFS['dl_'+m]??({bf:7,lunch:10,dn:16})[m];
 // 이름으로 메뉴 찾기, 없으면 새로 등록
@@ -728,8 +734,9 @@ function reflow(from,front=[]){
 
 /* 한 주 자동 짜기: 남은 고기 재고(오래된 것·냉장 먼저) → 부족하면 즐겨찾기 메뉴 중 가장 오래 안 먹은 것.
    어제 메뉴는 피하고, 최근 3일 안에 먹은 메뉴도 가능하면 피한다. 밑반찬이 빈 날엔 즐겨찾기 반찬을 하나씩 돌려 넣는다. */
+let planSkip=0;
 function planWeek(ws,healthy){
-  const t=todayISO();const rank={'냉장':0,'재움':1,'냉동':2};let n=0;
+  planSkip=0;const t=todayISO();const rank={'냉장':0,'재움':1,'냉동':2};let n=0;
   const mains=S.dishes.filter(d=>d.type==='main');const favs=mains.filter(d=>d.fav);const normPool=favs.length>=2?favs:mains;
   const hMains=mains.filter(d=>d.healthy),hFavs=hMains.filter(d=>d.fav);const hPool=hFavs.length>=2?hFavs:hMains;
   const favSidesN=S.dishes.filter(d=>d.type==='side'&&d.fav&&!d.isDefault&&!d.out);
@@ -739,10 +746,11 @@ function planWeek(ws,healthy){
   let si=0;
   for(let i=0;i<7;i++){
     const k=addDays(ws,i);if(k<t)continue;const d=getDay(k);if(d.status)continue;
+    const dnOut=allAbsent(k,'dn');if(dnOut&&isMealDay(d)&&!d.mains.length)planSkip++;
     const h=(healthy||inDiet(k))&&hPool.length>0;pool=h?hPool:normPool;favSides=h&&hSides.length?hSides:favSidesN;
-    const wid=isMealDay(d)&&!d.mains.length?takeWish():null;
+    const wid=isMealDay(d)&&!dnOut&&!d.mains.length?takeWish():null;
     if(wid){d.mains=[{dishId:wid,stockId:attachStock(wid)}];n++;}
-    else if(isMealDay(d)&&!d.mains.length){
+    else if(isMealDay(d)&&!dnOut&&!d.mains.length){
       const prev=prevMains(k);const prevIds=prev?ids(prev):[];
       const recent=new Set();for(let j=1;j<=3;j++){const p=S.days[addDays(k,-j)];if(p&&isMealDay(p))p.mains.forEach(m=>recent.add(m.dishId))}
       const avail=(FEATURE_SHOP?S.stock:[]).filter(s=>remaining(s)>0&&!prevIds.includes(s.dishId)).sort((a,b)=>(rank[a.storage]-rank[b.storage])||a.bought.localeCompare(b.bought));
@@ -752,9 +760,10 @@ function planWeek(ws,healthy){
         if(list.length){list.sort((a,b)=>lastUsed(a.id,k).localeCompare(lastUsed(b.id,k)));d.mains=[{dishId:list[0].id,stockId:attachStock(list[0].id)}];n++;}
       }
     }
-    if(!d.sides.length&&favSides.length&&isMealDay(d))d.sides=[favSides[si++%favSides.length].id];
+    if(!d.sides.length&&favSides.length&&isMealDay(d)&&!dnOut)d.sides=[favSides[si++%favSides.length].id];
     // 아침·점심도 체크된 날은 저녁과 똑같이: 그날 다른 끼니·어제와 겹치지 않는 메뉴 중 가장 오래 안 먹은 것 + 반찬 하나
     extraMeals(k).forEach(ml=>{
+      if(allAbsent(k,ml)){planSkip++;return}
       if(!ofType(d[ml],'main').length){
         const pd=S.days[addDays(k,-1)];
         const avoid=new Set([...ids(d.mains),...ids(d.bf),...ids(d.lunch),...(prevMains(k)?ids(prevMains(k)):[]),...(pd&&!pd.trip?ids(pd[ml]||[]):[])]);
@@ -958,7 +967,7 @@ function renderPlan(){
   let home=0,assigned=0;const missing=[];const html=[];
   for(let i=0;i<7;i++){
     const k=addDays(weekStart,i);const day=getDay(k);
-    if(isMealDay(day)){home++;if(day.mains.length)assigned++;else if(k>=t)missing.push(dow(k));}
+    if(isMealDay(day)){home++;if(day.mains.length)assigned++;else if(k>=t&&!allAbsent(k,'dn'))missing.push(dow(k));}
     const st=day.status==='done'?'<span class="status done">먹음</span>':day.status==='out'?'<span class="status out">배달·외식</span>':'';
     if(k<t){
       const what=day.trip?'집 비움':day.status==='out'?'배달·외식':day.away?'회식·약속':day.mains.map(m=>dish(m.dishId)?.name).filter(Boolean).join('·')||'기록 없음';
@@ -986,10 +995,10 @@ function renderPlan(){
     }
     const by=day.by&&day.by!==DEV&&Date.now()-(day.u||0)<864e5?nameOf(day.by):'';
     html.push(`<article class="day${k===t?' today':''}" data-k="${k}">
-      <div class="dayhead"><span class="dayname">${dow(k)}요일</span><span class="daydate">${md(k)}</span>${k===t?'<span class="badge">오늘</span>':''}${hol?`<span class="pill hol">${esc(hol)}</span>`:''}${inDiet(k)?'<span class="pill ok">가볍게</span>':''}${day.status==='done'?st:''}${dayKcal(day,k)?`<span class="daydate" style="margin-left:auto">약 ${dayKcal(day,k).toLocaleString()}kcal</span>`:''}</div>
+      <div class="dayhead"><span class="dayname">${dow(k)}요일</span><span class="daydate">${md(k)}</span>${k===t?'<span class="badge">오늘</span>':''}${hol?`<span class="pill hol">${esc(hol)}</span>`:''}${inDiet(k)?'<span class="pill ok">가볍게</span>':''}${headPills(k)}${day.status==='done'?st:''}${dayKcal(day,k)?`<span class="daydate" style="margin-left:auto">약 ${dayKcal(day,k).toLocaleString()}kcal</span>`:''}</div>
       ${day.memo?`<button class="daymemo" data-edit="${k}" data-focus="memo">메모 · ${esc(day.memo)}</button>`:''}${by?`<span class="whoby">✎ ${esc(by)}${ga(by)} 고침</span>`:''}
       ${absLines(k).length?`<button class="absline" data-edit="${k}" data-focus="eat">빠짐 · ${absLines(k).map(esc).join(' / ')}</button>`:''}${seg}${body}
-      ${day.memo?'':`<button class="memoadd" data-edit="${k}" data-focus="memo">+ 이날 메모</button>`}
+      <div class="addrow2">${day.memo?'':`<button class="memoadd" data-edit="${k}" data-focus="memo">+ 이날 메모</button>`}${!day.trip&&k>=t&&!absLines(k).length&&(dn||xm.length)?`<button class="memoadd" data-edit="${k}" data-focus="eat">+ 빠지는 가족</button>`:''}</div>
     </article>`);
   }
   $('#days').innerHTML=html.join('');
@@ -1313,7 +1322,7 @@ $('#nextWeek').onclick=()=>{weekStart=addDays(weekStart,7);renderPlan()};
 function runPlan(healthy){
   if(healthy&&!S.dishes.some(d=>d.type==='main'&&d.healthy))return toast('건강식 주 메뉴가 없어요. 메뉴·메모에서 건강식을 체크해 주세요');
   const n=planWeek(weekStart,healthy);
-  if(n){save();render();return toast(`${n}칸을 ${healthy?'건강식으로 ':''}짰어요. 마음에 안 드는 날만 바꾸세요`)}
+  if(n){save();render();return toast(`${n}칸을 ${healthy?'건강식으로 ':''}짰어요.${planSkip?` 모두 못 먹는 ${planSkip}끼는 건너뛰었어요.`:' 마음에 안 드는 날만 바꾸세요'}`)}
   confirmBox('빈 날이 없어요. 앞으로 남은 날 메뉴를 지우고 다시 짤까요?','다시 짜기',()=>{
     const t=todayISO();for(let i=0;i<7;i++){const k=addDays(weekStart,i);const d=S.days[k];if(!d||k<t||d.status)continue;d.mains=[];d.sides=[];extraMeals(k).forEach(ml=>d[ml]=[]);}
     const m=planWeek(weekStart,healthy);save();render();toast(`${m}칸을 ${healthy?'건강식으로 ':''}다시 짰어요`)});
@@ -1582,7 +1591,11 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='2.2';
+const APP_VERSION='2.3';
+const HISTORY=[["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
+(function(){const el=$('#verCard');if(!el)return;
+  el.innerHTML=`<div class="verrow"><span>앱 버전</span><b>${esc(APP_VERSION)}</b></div>
+    <details style="margin-top:10px"><summary>버전별 업데이트 내역 보기</summary><div class="verhist">${HISTORY.map(([v,l])=>`<b>${esc(v)}</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div></details>`})();
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
