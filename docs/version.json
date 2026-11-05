@@ -1,7 +1,9 @@
 {
- "latest": "2.4",
+ "latest": "2.5",
  "notes": [
-  "끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."
+  "아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.",
+  "돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.",
+  "함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."
  ],
  "install": "지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)\n1. 테스터 그룹 가입: [그룹 가입]\nhttps://groups.google.com/g/bapsang-testers\n2. 테스터 등록: [BECOME A TESTER]\nhttps://play.google.com/apps/testing/com.yoo.familydinner\n3. 같은 화면 아래 [download it on Google Play]로 설치"
 }
