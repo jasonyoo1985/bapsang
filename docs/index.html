@@ -278,6 +278,7 @@ nav.tabs button{font-size:11.5px;padding:7px 0}
 .calt.out{background:#F3D59E;color:#4D3410}.calt.away{background:#A9D1CC;color:#203F3C}
 .addrow2{display:flex;gap:8px;flex-wrap:wrap}.pill.cnt{background:#FFE9D6;color:#7C2D12}
 .verrow{display:flex;justify-content:space-between;align-items:center;font-size:15px}.verhist b{display:block;margin-top:10px;font-size:14px}.verhist ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.kref{font-size:12px;color:var(--muted);margin:2px 0 4px}
 .absline{display:block;text-align:left;border:0;background:#FFF1E6;color:#7C2D12;border-radius:10px;padding:6px 10px;font-size:13px;width:100%}
 .calx{font-size:10px;color:#9A3412;font-weight:600}
 .eatbox{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px}
@@ -518,6 +519,11 @@ function dishInfo(d){const k=kcalOf(d);return [d.healthy?'건강식':'',k?`약 $
 function dayDishes(day,k){if(!day||day.trip)return [];const out=[];
   if(isMealDay(day))day.mains.forEach(m=>out.push(m.dishId));extraMeals(k).forEach(x=>day[x].forEach(m=>out.push(m.dishId)));
   S.dishes.filter(d=>d.type==='side'&&d.isDefault).forEach(d=>out.push(d.id));day.sides.forEach(id=>out.push(id));return out.map(dish).filter(Boolean)}
+function mealKcal(day,k,m){if(!day||day.trip||day.status==='out'||day.away&&m==='dn')return 0;let ids=[];
+  if(m==='dn'){if(isMealDay(day))day.mains.forEach(x=>ids.push(x.dishId));S.dishes.filter(d=>d.type==='side'&&d.isDefault).forEach(d=>ids.push(d.id));day.sides.forEach(id=>ids.push(id))}
+  else (day[m]||[]).forEach(x=>ids.push(x.dishId));
+  return ids.map(dish).filter(Boolean).reduce((n,d)=>n+(kcalOf(d)||0),0)}
+const kref=(day,k,m)=>{const n=mealKcal(day,k,m);return n?`<div class="kref">${MEALS[m]} 약 ${n.toLocaleString()}kcal · 참고용·대략값</div>`:''};
 function dayKcal(day,k){return dayDishes(day,k).reduce((n,d)=>n+(kcalOf(d)||0),0)}
 /* 대략적인 영양성분: 메뉴 종류별 탄·단·지 칼로리 비율로 그램을 어림한다 (정확한 값 아님) */
 const MACRO=[
@@ -884,7 +890,7 @@ function renderToday(){
   // 2) 오늘 저녁 카드
   let body;
   const xm=day.trip?[]:extraMeals(t),two=xm.length>0;
-  const lunchLine=xm.map(m=>`<div class="row lunchrow"><span class="rowlabel">${MEALS[m]}</span><div class="chips">${day[m].length?lunchChips(day,false,t,m):`<button class="chip missing" data-edit="${t}" data-focus="${m}|main">+ ${MEALS[m]} 정하기</button>`}</div></div>`).join('');
+  const lunchLine=xm.map(m=>`<div class="row lunchrow"><span class="rowlabel">${MEALS[m]}</span><div class="chips">${day[m].length?lunchChips(day,false,t,m):`<button class="chip missing" data-edit="${t}" data-focus="${m}|main">+ ${MEALS[m]} 정하기</button>`}</div></div>${kref(day,t,m)}`).join('');
   const dn=!day.trip&&dnOn(day);
   if(day.trip){body=`<div class="awaynote">오늘은 집 비움 (여행·고향) · 식사 계획 없음</div><div class="btnrow"><button class="btn small" data-mark="${t}|undo">집에 있어요</button></div>`;}
   else if(!dn){body=xm.length?'':`<div class="awaynote">오늘은 함께 먹는 끼니가 체크되어 있지 않아요.</div><div class="btnrow"><button class="btn small" data-tab="plan">주간 계획에서 체크하기</button></div>`;}
@@ -896,7 +902,7 @@ function renderToday(){
       ${day.status==='done'?`<div class="notice ok" style="margin:0"><span class="grow">오늘 집밥 먹었어요 ✓</span><button class="btn small" data-mark="${t}|undo">취소</button></div>`:
       `<span class="help" style="margin:0">계획대로 먹으면 아무것도 안 눌러도 돼요. 우리 집 저녁이 통째로 바뀔 때만 눌러 주세요.</span>
       <div class="actions"><button class="btn" data-mark="${t}|away">회식·약속<br><small>메뉴 내일로</small></button><button class="btn" data-mark="${t}|out">배달·외식<br><small>메뉴 내일로</small></button><button class="btn" data-mark="${t}|trip">집 비움<br><small>여행·고향</small></button></div>`}
-      <div class="btnrow"><button class="btn small" data-edit="${t}">메뉴 바꾸기</button></div>`;
+      ${kref(day,t,'dn')}<div class="btnrow"><button class="btn small" data-edit="${t}">메뉴 바꾸기</button></div>`;
   }
   const eatMeals=day.trip?[]:[...xm.filter(m=>day[m].length),...(dn&&!day.status&&!day.away&&(day.mains.length||day.sides.length)?['dn']:[])];
   const eat=eatMeals.length?eatBlock(t,eatMeals):'';
@@ -981,14 +987,14 @@ function renderPlan(){
     if(day.trip)body=`<div class="awaynote">집 비움 (여행·고향) · 식사 계획 없음</div>`;
     else{
       const checks=`<div class="mealchecks" role="group" aria-label="이날 함께 먹는 끼니">${['bf','lunch','dn'].map(m=>`<label class="check"><input type="checkbox" data-mealon="${k}|${m}"${(m==='dn'?dn:xm.includes(m))?' checked':''}> ${MEALS[m]}</label>`).join('')}</div>`;
-      const meal=ml=>`<div class="mealblk"><span class="mealttl">${MEALS[ml]}</span>
+      const meal=ml=>`<div class="mealblk"><span class="mealttl">${MEALS[ml]}</span>${kref(day,k,ml)}
         <div class="row"><span class="rowlabel">주 메뉴</span><div class="chips">${lunchChips(day,!day.status,k,ml,'main')}<button class="chip ${ofType(day[ml],'main').length?'add':'missing'}" data-edit="${k}" data-focus="${ml}|main">+ 주 메뉴</button></div></div>
         <div class="row"><span class="rowlabel">반찬</span><div class="chips">${lunchChips(day,!day.status,k,ml,'side')}<button class="chip add" data-edit="${k}" data-focus="${ml}|side">+ 반찬</button></div></div></div>`;
       let main;
       if(day.status==='out')main=`<div class="awaynote">외식 · 주 메뉴는 다음 날로 넘어감</div>`;
       else if(day.away)main=`<div class="awaynote">회식·약속 · 밑반찬만</div>`;
       else main=day.mains.length?`<div class="chips">${mainChips(day,!day.status,k)}${!day.status?`<button class="chip add" data-edit="${k}" data-focus="dn|main">+ 주 메뉴</button>`:''}</div>`:`<div class="chips"><button class="chip missing" data-edit="${k}" data-focus="dn|main">+ 주 메뉴 정하기</button></div>`;
-      const dinner=`<div class="mealblk"><span class="mealttl">저녁</span>
+      const dinner=`<div class="mealblk"><span class="mealttl">저녁</span>${kref(day,k,'dn')}
         <div class="row"><span class="rowlabel">주 메뉴</span>${main}</div>
         <div class="row"><span class="rowlabel">밑반찬</span><div class="chips">${sideChips(day,!day.status,k)}${day.status?'':`<button class="chip add" data-edit="${k}" data-focus="dn|side">+ 반찬</button>`}</div></div></div>`;
       body=`${checks}${xm.map(meal).join('')}${dn?dinner:''}${!xm.length&&!dn?'<div class="awaynote">함께 먹는 끼니를 체크하면 메뉴를 정할 수 있어요</div>':''}`;
@@ -1591,8 +1597,8 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- 의견: 구글 폼으로 보내면 시트에 쌓이고 메일 알림이 감 ---------- */
-const APP_VERSION='2.3';
-const HISTORY=[["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
+const APP_VERSION='2.4';
+const HISTORY=[["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
 (function(){const el=$('#verCard');if(!el)return;
   el.innerHTML=`<div class="verrow"><span>앱 버전</span><b>${esc(APP_VERSION)}</b></div>
     <details style="margin-top:10px"><summary>버전별 업데이트 내역 보기</summary><div class="verhist">${HISTORY.map(([v,l])=>`<b>${esc(v)}</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div></details>`})();

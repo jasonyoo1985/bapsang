@@ -1,9 +1,7 @@
 {
- "latest": "2.3",
+ "latest": "2.4",
  "notes": [
-  "주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.",
-  "빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.",
-  "설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."
+  "끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."
  ],
  "install": "지금은 테스트 기간이라 아래 순서로 설치해 주세요. (Play 스토어와 같은 계정으로)\n1. 테스터 그룹 가입: [그룹 가입]\nhttps://groups.google.com/g/bapsang-testers\n2. 테스터 등록: [BECOME A TESTER]\nhttps://play.google.com/apps/testing/com.yoo.familydinner\n3. 같은 화면 아래 [download it on Google Play]로 설치"
 }
