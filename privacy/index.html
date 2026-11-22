@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="ko">
 <head>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 </head>
@@ -54,6 +60,7 @@ footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);paddin
       <tr><td>위와 같은 식단 데이터 (가족 공유를 켠 경우만)</td><td>Google Firebase Realtime Database (싱가포르 지역)</td><td>같은 가족 코드를 가진 폰끼리 식단을 실시간으로 함께 보기 위해</td></tr>
       <tr><td>의견 내용, 별점, 앱 버전, 폰 기종, 의견 번호 (의견을 보낸 경우만)</td><td>Google Forms와 개발자의 Google 스프레드시트</td><td>앱을 고치고 개선하기 위해</td></tr>
     </table></div>
+    <p>메뉴에 레시피 주소(유튜브·블로그)를 넣으면, 그 주소는 식단 데이터와 함께 저장돼요. 유튜브 주소를 넣은 경우에는 카드에 보여 줄 대표 그림을 YouTube(Google) 서버에서 받아 와요. 주소를 열 때는 유튜브 앱이나 인터넷 창이 열려요.</p>
   </section>
 
   <section>
@@ -62,6 +69,8 @@ footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);paddin
       <li>가족 공유는 사용자가 ‘새 가족 만들기’ 또는 ‘가족 코드로 참여’를 고를 때만 켜져요. ‘혼자 쓰기’를 고르면 식단은 폰 밖으로 나가지 않아요.</li>
       <li>공유 식단은 무작위로 만든 24자리 가족 코드 아래에 저장돼요. 이 코드를 아는 사람만 그 식단을 읽고 고칠 수 있어요. 코드는 믿을 수 있는 가족에게만 보내 주세요.</li>
       <li>공유 저장소에는 식단 정보만 있고, 누구의 식단인지 알 수 있는 이름이나 연락처는 없어요.</li>
+      <li>초대 글을 복사해 둔 경우, 앱을 열 때 복사된 글에서 가족 코드를 찾는 데에만 클립보드를 읽어요. 읽은 내용은 저장하거나 밖으로 보내지 않아요.</li>
+      <li>설정에서 ‘가족이 식단을 바꾸면 알림’을 켠 경우에만, 앱이 15분쯤 간격으로 위와 같은 공유 저장소의 식단을 확인해 폰에 알림을 띄워요. 확인한 내용은 알림 문구를 만드는 데만 쓰고 따로 저장하지 않아요.</li>
     </ul>
   </section>
 
