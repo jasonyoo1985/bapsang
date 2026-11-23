@@ -420,10 +420,15 @@ details.sgrp>summary small{display:block;color:var(--muted);font-size:12.5px;mar
 details.sgrp>summary .ar{margin-left:auto;font-size:22px;color:var(--muted);transition:transform .15s}
 details.sgrp[open]>summary .ar{transform:rotate(90deg)}
 details.sgrp[open]>summary{margin-bottom:4px}
+
+.cmtline{display:block;width:100%;text-align:left;border:0;background:#F3E8D0;border-radius:10px;padding:6px 10px;font-size:13px;color:var(--fg);margin:6px 0 4px}
+.cmt35{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;white-space:nowrap;bottom:calc(158px + env(safe-area-inset-bottom,0px))}
+.cmt35 button{background:#F7D999;color:#3E3125;font-weight:700;border:0;border-radius:999px;padding:6px 14px;font-size:14px}
+.cmt35 .nw{margin-left:6px}
 /* 3.4 */
 .lockd{opacity:.4;cursor:not-allowed}
 .nw{display:inline-block;background:#E08A2E;color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;letter-spacing:0;line-height:1.5}
-html[data-nwoff~="pin"] .nw-pin,html[data-nwoff~="own"] .nw-own,html[data-nwoff~="set"] .nw-set{display:none}
+html[data-nwoff~="pin"] .nw-pin,html[data-nwoff~="own"] .nw-own,html[data-nwoff~="set"] .nw-set,html[data-nwoff~="cmt"] .nw-cmt{display:none}
 .own34row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
 .own34row:empty,.own34:empty{display:none}
 .pin34,.own34b{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 10px;font-size:12.5px;color:var(--fg);white-space:nowrap}.pin34 .nw,.own34b .nw{font-size:10px;padding:0 6px;margin-left:4px}
@@ -749,7 +754,7 @@ function normalize(st){
   Object.keys(st.days).forEach(k=>{st.days[k]=Object.assign(blankDay(),st.days[k])});
   return st;
 }
-let S,last34=null,undo34=null,undoAt=0;
+let S,last34=null,undo34=null,undoAt=0,pendCmt34=null;
 (function load(){
   try{const raw=localStorage.getItem(KEY);if(raw){S=normalize(JSON.parse(raw));return}
       const old=localStorage.getItem(OLDKEY);if(old){S=normalize(migrateV1(JSON.parse(old)));return}}catch(e){}
@@ -768,7 +773,7 @@ function stamp(){const now=Date.now();S.del=S.del||{};
   Object.entries(S.days).forEach(([k,v])=>{if(base.y[k]!==noU(v)){v.u=now;v.by=DEV}});
   const old=now-60*864e5;Object.keys(S.del).forEach(id=>{if(S.del[id]<old)delete S.del[id]});
   base=snap(S);}
-function save(){if(!guard34())return;stamp();S.updatedAt=Date.now();S.by=DEV;saveLocal();push();last34=snap34();}
+function save(){if(!guard34())return;const pc=pendCmt34;pendCmt34=null;stamp();S.updatedAt=Date.now();S.by=DEV;saveLocal();push();last34=snap34();if(pc&&pc.length)offerCmt35(pc)}
 // L=이 폰, R=공유 저장소. 메뉴와 날짜는 하나씩 더 최근 것을 고르고, 나머지 설정은 나중에 저장한 쪽을 따른다
 function merge(L,R){let mine=false;const del=Object.assign({},R.del||{});
   Object.entries(L.del||{}).forEach(([id,t])=>{if(!(del[id]>=t)){del[id]=t;mine=true}});
@@ -1036,6 +1041,7 @@ function renderToday(){
   }
   const ya=['bf','lunch','dn'].flatMap(m=>absOf(y,m).map(a=>`${MEALS[m]} ${a.n} ${a.st==='late'?'늦게 먹음':'못 먹음'}`));
   if(ya.length)h.push(`<div class="notice info"><span class="grow">어제 · ${ya.map(esc).join(' / ')}</span></div>`);
+  if(day.chg&&day.chg.t)h.push(chgLine(t,day));
   // 2) 오늘 저녁 카드
   let body;
   const xm=day.trip?[]:extraMeals(t),two=xm.length>0;
@@ -1301,7 +1307,7 @@ function renderPlan(){
     const by=day.by&&day.by!==DEV&&Date.now()-(day.u||0)<864e5?nameOf(day.by):'';
     html.push(`<article class="day${k===t?' today':''}" data-k="${k}">
       <div class="dayhead"><span class="dayname">${dow(k)}요일</span><span class="daydate">${md(k)}</span>${k===t?'<span class="badge">오늘</span>':''}${hol?`<span class="pill hol">${esc(hol)}</span>`:''}${inDiet(k)?'<span class="pill ok">가볍게</span>':''}${headPills(k)}${day.status==='done'?st:''}${dayKcal(day,k)?`<span class="daydate" style="margin-left:auto">약 ${dayKcal(day,k).toLocaleString()}kcal</span>`:''}</div>
-      ${day.memo?`<button class="daymemo" data-edit="${k}" data-focus="memo">메모 · ${esc(day.memo)}</button>`:''}${by?`<span class="whoby">✎ ${esc(by)}${ga(by)} 고침</span>`:''}
+      ${chgLine(k,day)}${day.memo?`<button class="daymemo" data-edit="${k}" data-focus="memo">메모 · ${esc(day.memo)}</button>`:''}${by?`<span class="whoby">✎ ${esc(by)}${ga(by)} 고침</span>`:''}
       ${absLines(k).length?`<button class="absline" data-edit="${k}" data-focus="eat">빠짐 · ${absLines(k).map(esc).join(' / ')}</button>`:''}${seg}${body}
       <div class="addrow2">${day.memo?'':`<button class="memoadd" data-edit="${k}" data-focus="memo">+ 이날 메모</button>`}${!day.trip&&k>=t&&!absLines(k).length&&(dn||xm.length)?`<button class="memoadd" data-edit="${k}" data-focus="eat">+ 빠지는 가족</button>`:''}</div>
     </article>`);
@@ -2015,7 +2021,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='famno'){try{localStorage.setItem('wd.famCard','1')}catch(_){}render()}});
 document.addEventListener('visibilitychange',()=>{notiSeen();if(!document.hidden)setTimeout(checkClip,700)});
 setTimeout(checkClip,900);setTimeout(maybeRate,6000);setInterval(maybeRate,30000);setTimeout(()=>{notiSync();notiSeen()},1500);
-const APP_VERSION='3.4';
+const APP_VERSION='3.5';
 /* ---------- 3.4: 되돌리기 · 식단 담당 · 시작 화면 · 바뀐 점 안내 ---------- */
 const OWN_ON='background:var(--surface);border:2px solid var(--accent);font-weight:700;color:var(--fg)';
 const clone34=x=>JSON.parse(JSON.stringify(x));
@@ -2047,6 +2053,7 @@ function guard34(){
     restoreDays(last34,ch.dayKeys);S.dishes=clone34(last34.dishes);S.stock=clone34(last34.stock);
     render();setTimeout(()=>toast(`식단은 ${ownText()} 정해요 · 이 폰에서는 보기만 해요`),40);return false}
   if(ch.drop||ch.delDishes.length)showUndo34(last34,ch);else hideUndo34();
+  pendCmt34=ch.dayKeys.filter(k=>k>=todayISO());
   return true;
 }
 function hideUndo34(){const e=document.getElementById('undoBar');if(e)e.remove();clearTimeout(undo34);undo34=null}
@@ -2113,38 +2120,75 @@ function lock34(){
 }
 let lockT=0;new MutationObserver(()=>{cancelAnimationFrame(lockT);lockT=requestAnimationFrame(lock34)}).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('click',e=>{const x=e.target.closest('.lockd');if(!x)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();toast(`식단은 ${ownText()} 정해요. 담당을 바꾸려면 위의 ‘식단 담당’을 눌러 주세요`)},true);
+
+/* ---------- 3.5: 수정 코멘트 (식단을 바꾼 이유 한 줄, 선택) ---------- */
+const CMT_PRESETS=['외식으로 바꿨어요','재료가 없어서','일정이 생겨서','가족이 원해서'];
+const cmtLast={};let cmtPend35=null;
+{const _c=closeModal;closeModal=function(){_c();if(cmtPend35){const k=cmtPend35;cmtPend35=null;setTimeout(()=>offerCmt35(k),150)}}}
+function chgLine(k,day){const c=day&&day.chg;if(!c||!c.t)return'';return `<button class="cmtline" data-cmt="${k}">💬 <b>${esc(c.n||'가족')}</b> · ${esc(c.t)}</button>`}
+function hideCmt35(){const e=document.getElementById('cmtBar');if(e)e.remove();clearTimeout(cmtT35)}
+let cmtT35=null;
+function offerCmt35(keys){
+  if(famList().length<2||keys.length>3)return;
+  if(document.querySelector('#modalRoot .modal')){cmtPend35=keys;return}
+  const k=keys[0],now=Date.now();if(cmtLast[k]&&now-cmtLast[k]<60000)return;cmtLast[k]=now;
+  hideCmt35();
+  const e=document.createElement('div');e.id='cmtBar';e.className='toast cmt35';
+  e.innerHTML=`<span></span><button type="button">이유 남기기${nwTag('cmt')}</button>`;
+  e.firstChild.textContent=`${md(k)}(${dow(k)}) 식단을 바꿨어요`;
+  e.querySelector('button').onclick=()=>{nwDone('cmt');hideCmt35();cmtSheet(k)};
+  document.body.appendChild(e);cmtT35=setTimeout(hideCmt35,8000);
+}
+function cmtSheet(k){
+  hideUndo34();hideCmt35();
+  const d=getDay(k),c=d.chg,ed=canEdit();
+  openModal(ed?`<h2>${md(k)}(${dow(k)}) 바꾼 이유</h2>
+    <p class="help">가족이 이날 식단을 볼 때 한 줄로 보여요. 안 남겨도 괜찮아요. (선택)</p>
+    <div class="chips">${CMT_PRESETS.map(x=>`<button class="chip" data-cmtp="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <div class="field"><label for="cmtIn">직접 쓰기</label><input id="cmtIn" maxlength="40" value="${esc((c&&c.t)||'')}" placeholder="예: 아이 학원 일정 때문에" autocomplete="off"></div>
+    <div class="btnrow">${c?'<button class="btn danger" id="cmtDel">지우기</button>':''}<button class="btn" id="cmtNo">건너뛰기</button><button class="btn primary" id="cmtOk">남기기</button></div>`
+  :`<h2>${md(k)}(${dow(k)}) 바꾼 이유</h2><div class="notice info" style="margin:0 0 10px"><span class="grow"><b>${esc((c&&c.n)||'가족')}</b> · ${esc((c&&c.t)||'')}</span></div><div class="btnrow"><button class="btn primary" id="cmtNo">닫기</button></div>`,()=>{
+    $('#cmtNo').onclick=closeModal;
+    if(!ed)return;
+    document.querySelectorAll('[data-cmtp]').forEach(b=>b.onclick=()=>{$('#cmtIn').value=b.dataset.cmtp;$('#cmtIn').focus()});
+    $('#cmtOk').onclick=()=>{const t=$('#cmtIn').value.trim().slice(0,40);if(!t)return closeModal();getDay(k).chg={t,n:(nameOf(DEV)||'').trim()||'가족',at:Date.now()};save();render();closeModal();toast('가족에게 남겼어요')};
+    const dl=$('#cmtDel');if(dl)dl.onclick=()=>{delete getDay(k).chg;save();render();closeModal();toast('지웠어요')};
+    $('#cmtIn').onkeydown=e=>{if(e.key==='Enter')$('#cmtOk').click()};
+  });
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cmt]');if(b)cmtSheet(b.dataset.cmt)});
 /* 업데이트 후 처음 한 번: 새로 바뀐 점 */
 function pulse34(sel){setTimeout(()=>{const el=document.querySelector(`.tab.active ${sel}`);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('pulse34');setTimeout(()=>el.classList.remove('pulse34'),4500)}},350)}
-function whatsNew34(){
-  const fam=famList().length>=2;
-  const it=(ic,t,d,go)=>`<li><span class="ic">${ic}</span><div><b>${t}</b><small>${d}</small>${go?`<button class="btn small" data-wngo="${go}">지금 해보기</button>`:''}</div></li>`;
-  openModal(`<div class="wn"><h2>3.4 새로 바뀐 점</h2><p class="help" style="margin-bottom:0">쓰던 대로 쓰셔도 돼요. 필요할 때 골라 쓰는 기능이에요.</p><ul>`+
-    it('↶','되돌리기','메뉴를 빼거나 지우면 아래에 [되돌리기]가 잠깐 떠요. 누르면 바로 복구돼요.','undo')+
+function whatsNew34(only35){
+  const it=(ic,t,d,go,nw)=>`<li><span class="ic">${ic}</span><div><b>${t}${nw?` <span class="nw" style="margin:0">새로워요</span>`:''}</b><small>${d}</small>${go?`<button class="btn small" data-wngo="${go}">지금 해보기</button>`:''}</div></li>`;
+  const n35=it('💬','수정 코멘트','식단을 바꾸면 아래에 [이유 남기기]가 잠깐 떠요. 한 줄 이유를 남기면 그 날짜 카드와 오늘 밥상에서 가족이 볼 수 있어요. 가족이 함께 쓸 때만 나와요. (선택)','cmt',1);
+  const n34=it('↶','되돌리기','메뉴를 빼거나 지우면 아래에 [되돌리기]가 잠깐 떠요. 누르면 바로 복구돼요.','undo')+
     it('📌','시작 화면 고르기','‘계획’ 화면 위의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)','pin')+
     it('👩‍🍳','식단 담당','식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정해요. 다른 가족은 보기만 하고 ‘못 먹어요’는 그대로 눌러요. (선택)','own')+
-    it('🔑','가족 코드 참여 안내','코드가 틀렸는지, 연결이 안 되는지 나눠서 알려 줘요.','')+
-    `</ul><div class="btnrow"><button class="btn primary" id="wnClose">닫기</button></div></div>`,()=>{
+    it('🔑','가족 코드 참여 안내','코드가 틀렸는지, 연결이 안 되는지 나눠서 알려 줘요.','');
+  openModal(`<div class="wn"><h2>3.5 새로 바뀐 점</h2><p class="help" style="margin-bottom:0">쓰던 대로 쓰셔도 돼요. 필요할 때 골라 쓰는 기능이에요.</p><ul>`+n35+(only35?'':n34)+`</ul><div class="btnrow"><button class="btn primary" id="wnClose">닫기</button></div></div>`,()=>{
     $('#wnClose').onclick=closeModal;
     document.querySelectorAll('[data-wngo]').forEach(b=>b.onclick=()=>{const g=b.dataset.wngo;closeModal();
       if(g==='undo'){goTab('plan');toast('메뉴 옆 ×를 눌러 빼 보세요. 아래에 [되돌리기]가 떠요')}
       else if(g==='pin'){goTab('plan');pulse34('.pin34')}
+      else if(g==='cmt'){goTab('plan');toast(famList().length>=2?'식단을 바꾸면 아래에 [이유 남기기]가 떠요':'가족과 함께 쓰면 [이유 남기기]가 나타나요')}
       else if(g==='own'){if(famList().length>=2){goTab('plan');pulse34('.own34b')}else{goTab('more');toast('가족과 함께 쓰면 ‘식단 담당’이 나타나요. 먼저 가족을 초대해 보세요')}}})});
 }
 function start34(){
   nwApply();
   try{
     const seen=localStorage.getItem('wd.seenVer');
-    if(!seen&&!localStorage.getItem('wd.onboard')){localStorage.setItem('wd.seenVer',APP_VERSION);['pin','own','set'].forEach(nwDone);return}
+    if(!seen&&!localStorage.getItem('wd.onboard')){localStorage.setItem('wd.seenVer',APP_VERSION);['pin','own','set','cmt'].forEach(nwDone);return}
     if(seen===APP_VERSION)return;
     const tryShow=n=>setTimeout(()=>{if(localStorage.getItem('wd.seenVer')===APP_VERSION)return;
       if($('#modalRoot').innerHTML||!nameOf(DEV)){if(n<4)tryShow(n+1);return}
-      localStorage.setItem('wd.seenVer',APP_VERSION);whatsNew34()},n?4000:1800);
+      localStorage.setItem('wd.seenVer',APP_VERSION);whatsNew34(seen==='3.4')},n?4000:1800);
     tryShow(0);
   }catch(e){}
 }
 document.addEventListener('toggle',e=>{const d=e.target;if(d.matches&&d.matches('details.sgrp')&&d.open&&/나와 우리 집/.test(d.textContent.slice(0,40)))nwDone('set')},true);
 
-const HISTORY=[["3.4",["지운 메뉴는 아래에 잠깐 뜨는 [되돌리기]로 바로 복구할 수 있어요.","‘계획’ 탭의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)","식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정할 수 있어요. 담당이 아닌 가족은 식단 내용만 보기 전용이고, ‘못 먹어요’ 표시와 식단 공유는 그대로예요. 누구든 바꾸거나 풀 수 있어요. (선택)","가족 코드로 참여할 때 코드 문제인지 연결 문제인지 나눠서 알려 줘요.","업데이트 후 처음 열면 ‘새로 바뀐 점’이 한 번 떠요."]],["3.3",["주간 계획의 [식단 공유]에서 이번 주 식단을 예쁜 이미지로 만들어 카톡 등으로 보낼 수 있어요. 보내기 전에 미리 볼 수 있고, 글로 복사도 그대로 있어요.","처음 쓰는 분을 위해 비어 있는 주에는 자동 짜기·지난주 가져오기를 한 줄로 알려 줘요.","가족 식단표를 만든 뒤 아직 아무도 들어오지 않았다면 초대 글을 다시 보낼 수 있고, 가족이 합류하면 알려 줘요. 설정의 가족 공유에도 함께 보는 가족 수가 보여요."]],["3.2",["이름을 바꾸면 PC·폰에 남은 옛 이름도 함께 바뀌어, 가족 목록에 같은 사람이 두 번 보이지 않아요.","이미 두 번 보이는 이름은 설정에서 ‘나예요’를 눌러 합칠 수 있어요."]],["3.1",["아래 메뉴를 둥근 바와 그림 아이콘으로 바꿨어요. ‘메뉴·메모’는 ‘메뉴·레시피’로 이름을 바꿨어요.","메뉴 목록에 ▶영상·블로그 표시가 붙고, 위쪽 버튼으로 레시피가 있는 메뉴나 즐겨찾기만 모아 볼 수 있어요.","설정을 가족 공유 / 나와 우리 집 / 보관과 도움 세 묶음으로 정리했어요. 눌러서 열어 봐요."]],["3.0",["메뉴를 누르면 [레시피] 탭이 먼저 보이고, 그 옆에 [메모] 탭이 있어요."]],["2.9",["설정의 가족 공유에 [코드만 복사] 버튼을 넣었어요. 카톡 초대 글 없이 가족 코드만 복사해 문자·메모 등으로 알려 줄 수 있어요. 화면에는 전과 같이 코드 앞부분만 보여요.","메뉴를 누르면 [메모] [레시피] 탭이 생겼어요. 자주 보는 유튜브·블로그 주소를 메뉴당 3개까지 넣으면 ‘메뉴 이름 레시피 영상 ▶’ 카드로 보여요. 누르면 유튜브가 열리고 뒤로 가면 앱으로 돌아와요. 가족 모두에게 함께 보여요.","설정의 끼니 시간 버튼 12개를 ‘우리 집 밥 시간’ 선택 3개로 줄였어요. 기본은 아침 7시, 점심 12시, 저녁 7시이고 30분 단위로 골라요. 밥 시간이 가까울 때 ‘못 먹어요’를 누르면 따뜻하게 안내해요."]],["2.8",["오늘 밥상 카드를 칸으로 나눴어요. 오늘 저녁 메뉴, 저녁이 바뀌었을 때, 함께 먹는 가족이 서로 다른 색 칸으로 보여요.","반찬이 없는 날은 빈 밑반찬 줄을 숨겨요."]],["2.7",["계획 탭의 주간 계획·월간 달력·돌아보기를 아이콘이 있는 알약 버튼으로 바꿔 한눈에 보여요.","주간 계획 위쪽을 줄여 요일별 메뉴가 더 빨리 보여요. 요약은 한 줄로, '건강식으로 짜기'는 '가볍게 짜기'로 바꿨어요.","오늘 밥상·장보기·메뉴·설정 화면을 같은 디자인으로 다듬었어요. 메뉴·메모에 메뉴 찾기가 생겼어요."]],["2.6",["가족을 쉽게 초대하고 합류할 수 있어요. 가족 초대하기 한 번이면 초대 글이 만들어지고, 받은 가족은 글을 복사해 두고 앱을 열어 [참여하기]만 누르면 돼요.","이미 식단이 있는 폰도 가족 식단에 합칠 수 있어요.","가족이 바꾼 오늘 메뉴에 표시가 붙어요. 설정에서 폰 알림을 켜면(선택) 앱을 닫아도 바뀐 걸 알려 줘요.","앱 평가하기를 설정에 두었어요. 요약 이미지 아래에 앱 이름 한 줄이 들어가요."]],["2.5",["아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.","돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.","함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."]],["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
+const HISTORY=[["3.5",["식단을 바꾼 직후 [이유 남기기]가 잠깐 떠요. 한 줄 이유를 남기면 그 날짜 카드와 오늘 밥상에 ‘💬 엄마 · 외식으로 바꿨어요’로 가족에게 보여요. 가족이 함께 쓸 때만 나오는 선택 기능이에요."]],["3.4",["지운 메뉴는 아래에 잠깐 뜨는 [되돌리기]로 바로 복구할 수 있어요.","‘계획’ 탭의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)","식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정할 수 있어요. 담당이 아닌 가족은 식단 내용만 보기 전용이고, ‘못 먹어요’ 표시와 식단 공유는 그대로예요. 누구든 바꾸거나 풀 수 있어요. (선택)","가족 코드로 참여할 때 코드 문제인지 연결 문제인지 나눠서 알려 줘요.","업데이트 후 처음 열면 ‘새로 바뀐 점’이 한 번 떠요."]],["3.3",["주간 계획의 [식단 공유]에서 이번 주 식단을 예쁜 이미지로 만들어 카톡 등으로 보낼 수 있어요. 보내기 전에 미리 볼 수 있고, 글로 복사도 그대로 있어요.","처음 쓰는 분을 위해 비어 있는 주에는 자동 짜기·지난주 가져오기를 한 줄로 알려 줘요.","가족 식단표를 만든 뒤 아직 아무도 들어오지 않았다면 초대 글을 다시 보낼 수 있고, 가족이 합류하면 알려 줘요. 설정의 가족 공유에도 함께 보는 가족 수가 보여요."]],["3.2",["이름을 바꾸면 PC·폰에 남은 옛 이름도 함께 바뀌어, 가족 목록에 같은 사람이 두 번 보이지 않아요.","이미 두 번 보이는 이름은 설정에서 ‘나예요’를 눌러 합칠 수 있어요."]],["3.1",["아래 메뉴를 둥근 바와 그림 아이콘으로 바꿨어요. ‘메뉴·메모’는 ‘메뉴·레시피’로 이름을 바꿨어요.","메뉴 목록에 ▶영상·블로그 표시가 붙고, 위쪽 버튼으로 레시피가 있는 메뉴나 즐겨찾기만 모아 볼 수 있어요.","설정을 가족 공유 / 나와 우리 집 / 보관과 도움 세 묶음으로 정리했어요. 눌러서 열어 봐요."]],["3.0",["메뉴를 누르면 [레시피] 탭이 먼저 보이고, 그 옆에 [메모] 탭이 있어요."]],["2.9",["설정의 가족 공유에 [코드만 복사] 버튼을 넣었어요. 카톡 초대 글 없이 가족 코드만 복사해 문자·메모 등으로 알려 줄 수 있어요. 화면에는 전과 같이 코드 앞부분만 보여요.","메뉴를 누르면 [메모] [레시피] 탭이 생겼어요. 자주 보는 유튜브·블로그 주소를 메뉴당 3개까지 넣으면 ‘메뉴 이름 레시피 영상 ▶’ 카드로 보여요. 누르면 유튜브가 열리고 뒤로 가면 앱으로 돌아와요. 가족 모두에게 함께 보여요.","설정의 끼니 시간 버튼 12개를 ‘우리 집 밥 시간’ 선택 3개로 줄였어요. 기본은 아침 7시, 점심 12시, 저녁 7시이고 30분 단위로 골라요. 밥 시간이 가까울 때 ‘못 먹어요’를 누르면 따뜻하게 안내해요."]],["2.8",["오늘 밥상 카드를 칸으로 나눴어요. 오늘 저녁 메뉴, 저녁이 바뀌었을 때, 함께 먹는 가족이 서로 다른 색 칸으로 보여요.","반찬이 없는 날은 빈 밑반찬 줄을 숨겨요."]],["2.7",["계획 탭의 주간 계획·월간 달력·돌아보기를 아이콘이 있는 알약 버튼으로 바꿔 한눈에 보여요.","주간 계획 위쪽을 줄여 요일별 메뉴가 더 빨리 보여요. 요약은 한 줄로, '건강식으로 짜기'는 '가볍게 짜기'로 바꿨어요.","오늘 밥상·장보기·메뉴·설정 화면을 같은 디자인으로 다듬었어요. 메뉴·메모에 메뉴 찾기가 생겼어요."]],["2.6",["가족을 쉽게 초대하고 합류할 수 있어요. 가족 초대하기 한 번이면 초대 글이 만들어지고, 받은 가족은 글을 복사해 두고 앱을 열어 [참여하기]만 누르면 돼요.","이미 식단이 있는 폰도 가족 식단에 합칠 수 있어요.","가족이 바꾼 오늘 메뉴에 표시가 붙어요. 설정에서 폰 알림을 켜면(선택) 앱을 닫아도 바뀐 걸 알려 줘요.","앱 평가하기를 설정에 두었어요. 요약 이미지 아래에 앱 이름 한 줄이 들어가요."]],["2.5",["아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.","돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.","함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."]],["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
 (function(){const el=$('#verCard');if(!el)return;
   el.innerHTML=`<div class="verrow"><span>앱 버전</span><b>${esc(APP_VERSION)}</b></div>
     <details style="margin-top:10px"><summary>버전별 업데이트 내역 보기</summary><div class="verhist">${HISTORY.map(([v,l])=>`<b>${esc(v)}</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div></details>`})();
