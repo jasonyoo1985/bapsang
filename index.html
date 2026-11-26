@@ -486,7 +486,12 @@ header.top .rc37.dot i{display:block}
 .rcl42 input[type=text]{flex:1;min-width:0;border:1px solid transparent;background:transparent;border-radius:8px;padding:6px 6px;font-size:15px}
 .rcl42 input[type=text]:focus{border-color:var(--line);background:var(--bg)}
 .rcl42 .tg{font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 8px;white-space:nowrap}
-.rcl42 .li.off input[type=text]{color:var(--muted);text-decoration:line-through}
+.rcl42 .li.off input[type=text],.rcl42 .li.off .nmv,.rcl42 .li.off .amv{color:var(--muted);text-decoration:line-through}
+.rcl42 .nmv{flex:1;min-width:0;font-size:15px}.rcl42 .nmv small{display:block;font-size:11.5px;color:var(--warn);text-decoration:none}
+.rcl42 .amv{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rcl42 .li.yel{background:var(--warn-soft)}
+.rcl42 input.am{width:92px;flex:none;text-align:right;border-color:var(--line);background:var(--bg)}.rcl42 input.nm{border-color:var(--line);background:var(--bg)}
+.rcbox42 small{font-size:11.5px;opacity:.85}
 .rcbox42{border-radius:12px;padding:9px 11px;font-size:13px;background:var(--sunk);color:var(--muted)}
 .rcbox42.ok{background:var(--accent-soft);color:var(--accent-ink)}
 .rcbox42.warn{background:var(--warn-soft);color:var(--warn)}
@@ -2087,7 +2092,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='famno'){try{localStorage.setItem('wd.famCard','1')}catch(_){}render()}});
 document.addEventListener('visibilitychange',()=>{notiSeen();if(!document.hidden)setTimeout(checkClip,700)});
 setTimeout(checkClip,900);setTimeout(maybeRate,6000);setInterval(maybeRate,30000);setTimeout(()=>{notiSync();notiSeen()},1500);
-const APP_VERSION='4.2';
+const APP_VERSION='4.3';
 /* ---------- 3.4: 되돌리기 · 식단 담당 · 시작 화면 · 바뀐 점 안내 ---------- */
 const OWN_ON='background:var(--surface);border:2px solid var(--accent);font-weight:700;color:var(--fg)';
 const clone34=x=>JSON.parse(JSON.stringify(x));
@@ -2373,6 +2378,7 @@ function start34(){
     const seen=localStorage.getItem('wd.seenVer');
     if(!seen&&!localStorage.getItem('wd.onboard')){localStorage.setItem('wd.seenVer',APP_VERSION);NW_KEYS.forEach(nwDone);return}
     if(seen===APP_VERSION){NW_KEYS.forEach(nwDone);return}
+    if(seen==='4.2'){localStorage.setItem('wd.seenVer',APP_VERSION);NW_KEYS.forEach(nwDone);return}
     const tryShow=n=>setTimeout(()=>{if(localStorage.getItem('wd.seenVer')===APP_VERSION)return;
       if($('#modalRoot').innerHTML||!nameOf(DEV)){if(n<4)tryShow(n+1);return}
       localStorage.setItem('wd.seenVer',APP_VERSION);whatsNew34(seen)},n?4000:1800);
@@ -2381,7 +2387,7 @@ function start34(){
 }
 document.addEventListener('toggle',e=>{const d=e.target;if(d.matches&&d.matches('details.sgrp')&&d.open&&/나와 우리 집/.test(d.textContent.slice(0,40)))nwDone('set')},true);
 
-const HISTORY=[["4.2",["장보기 탭 맨 아래에 [🧾 장 본 영수증]이 생겼어요. 영수증 사진을 고르거나 쿠팡 같은 글을 붙여넣으면 산 것을 읽어서, 사야 할 것에 있던 건 ‘샀어요’로 옮기고 없던 건 샀어요에 더해요. 읽은 걸 확인하고 [이대로 붙이기]만 누르면 끝이고, 틀린 건 눌러서 고칠 수 있어요. 안 읽히면 다시 고르기·글 붙여넣기·직접 적기를 고를 수 있어요. 사진은 저장하지 않고 산 것 이름만 가족과 함께 봐요. (선택)"]],["4.1",["오늘 밥상 화면의 칸 사이 간격을 줄여서 한눈에 더 많이 보여요. 글자와 버튼 크기는 그대로예요."]],["4.0",["지난 날에도 ‘나 못 먹었어요’를 표시할 수 있어요. 달력에서 그날을 눌러 고치거나, 오늘 밥상의 어제 안내에서 바로 누르세요. 늦게 들어와 못 먹은 다음 날에도 고칠 수 있어요. (선택)"]],["3.9",["식단 담당을 아직 정하지 않았을 때도 식단 위쪽에 가로 초록 바로 보여요. ‘담당 가족 모두 · 누구나 고쳐요’라고 알려 주고, 오른쪽 [담당 정하기]로 바로 정할 수 있어요. (선택)"]],["3.8",["‘새로워요’ 표시가 업데이트 후 처음 연 뒤, 앱을 닫았다가 다시 열면 사라져요. 기능을 써 본 표시도 바로 사라지도록 고쳤어요."]],["3.7",["가족이 먹고 싶어요·식단·장보기를 바꾸면 ‘인찬엄마가 먹고 싶어요에서 ‘1등급한우’를 뺐어요’처럼 누가 무엇을 했는지 알려 줘요.","맨 위 [🕘 최근 변경]에서 지난 7일(최대 30개)의 변경을 볼 수 있고, 지운 것은 [되살리기]로 되돌려요. 가족이 모두 3.7로 업데이트해야 기록이 빠짐없이 남아요."]],["3.6",["식단 위쪽의 담당 표시를 한 줄로 줄이고 더 눈에 띄게 했어요. 담당이 아닌 폰은 ‘이 폰은 보기만’이라고 보여요.","가족이 오늘 메뉴를 바꾸면 오늘 저녁 메뉴 카드 위에 ‘오늘 메뉴가 바뀌었어요’ 띠로 알려 주고, 남긴 이유도 함께 보여요."]],["3.5",["식단을 바꾼 직후 [이유 남기기]가 잠깐 떠요. 한 줄 이유를 남기면 그 날짜 카드와 오늘 밥상에 ‘💬 엄마 · 외식으로 바꿨어요’로 가족에게 보여요. 가족이 함께 쓸 때만 나오는 선택 기능이에요."]],["3.4",["지운 메뉴는 아래에 잠깐 뜨는 [되돌리기]로 바로 복구할 수 있어요.","‘계획’ 탭의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)","식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정할 수 있어요. 담당이 아닌 가족은 식단 내용만 보기 전용이고, ‘못 먹어요’ 표시와 식단 공유는 그대로예요. 누구든 바꾸거나 풀 수 있어요. (선택)","가족 코드로 참여할 때 코드 문제인지 연결 문제인지 나눠서 알려 줘요.","업데이트 후 처음 열면 ‘새로 바뀐 점’이 한 번 떠요."]],["3.3",["주간 계획의 [식단 공유]에서 이번 주 식단을 예쁜 이미지로 만들어 카톡 등으로 보낼 수 있어요. 보내기 전에 미리 볼 수 있고, 글로 복사도 그대로 있어요.","처음 쓰는 분을 위해 비어 있는 주에는 자동 짜기·지난주 가져오기를 한 줄로 알려 줘요.","가족 식단표를 만든 뒤 아직 아무도 들어오지 않았다면 초대 글을 다시 보낼 수 있고, 가족이 합류하면 알려 줘요. 설정의 가족 공유에도 함께 보는 가족 수가 보여요."]],["3.2",["이름을 바꾸면 PC·폰에 남은 옛 이름도 함께 바뀌어, 가족 목록에 같은 사람이 두 번 보이지 않아요.","이미 두 번 보이는 이름은 설정에서 ‘나예요’를 눌러 합칠 수 있어요."]],["3.1",["아래 메뉴를 둥근 바와 그림 아이콘으로 바꿨어요. ‘메뉴·메모’는 ‘메뉴·레시피’로 이름을 바꿨어요.","메뉴 목록에 ▶영상·블로그 표시가 붙고, 위쪽 버튼으로 레시피가 있는 메뉴나 즐겨찾기만 모아 볼 수 있어요.","설정을 가족 공유 / 나와 우리 집 / 보관과 도움 세 묶음으로 정리했어요. 눌러서 열어 봐요."]],["3.0",["메뉴를 누르면 [레시피] 탭이 먼저 보이고, 그 옆에 [메모] 탭이 있어요."]],["2.9",["설정의 가족 공유에 [코드만 복사] 버튼을 넣었어요. 카톡 초대 글 없이 가족 코드만 복사해 문자·메모 등으로 알려 줄 수 있어요. 화면에는 전과 같이 코드 앞부분만 보여요.","메뉴를 누르면 [메모] [레시피] 탭이 생겼어요. 자주 보는 유튜브·블로그 주소를 메뉴당 3개까지 넣으면 ‘메뉴 이름 레시피 영상 ▶’ 카드로 보여요. 누르면 유튜브가 열리고 뒤로 가면 앱으로 돌아와요. 가족 모두에게 함께 보여요.","설정의 끼니 시간 버튼 12개를 ‘우리 집 밥 시간’ 선택 3개로 줄였어요. 기본은 아침 7시, 점심 12시, 저녁 7시이고 30분 단위로 골라요. 밥 시간이 가까울 때 ‘못 먹어요’를 누르면 따뜻하게 안내해요."]],["2.8",["오늘 밥상 카드를 칸으로 나눴어요. 오늘 저녁 메뉴, 저녁이 바뀌었을 때, 함께 먹는 가족이 서로 다른 색 칸으로 보여요.","반찬이 없는 날은 빈 밑반찬 줄을 숨겨요."]],["2.7",["계획 탭의 주간 계획·월간 달력·돌아보기를 아이콘이 있는 알약 버튼으로 바꿔 한눈에 보여요.","주간 계획 위쪽을 줄여 요일별 메뉴가 더 빨리 보여요. 요약은 한 줄로, '건강식으로 짜기'는 '가볍게 짜기'로 바꿨어요.","오늘 밥상·장보기·메뉴·설정 화면을 같은 디자인으로 다듬었어요. 메뉴·메모에 메뉴 찾기가 생겼어요."]],["2.6",["가족을 쉽게 초대하고 합류할 수 있어요. 가족 초대하기 한 번이면 초대 글이 만들어지고, 받은 가족은 글을 복사해 두고 앱을 열어 [참여하기]만 누르면 돼요.","이미 식단이 있는 폰도 가족 식단에 합칠 수 있어요.","가족이 바꾼 오늘 메뉴에 표시가 붙어요. 설정에서 폰 알림을 켜면(선택) 앱을 닫아도 바뀐 걸 알려 줘요.","앱 평가하기를 설정에 두었어요. 요약 이미지 아래에 앱 이름 한 줄이 들어가요."]],["2.5",["아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.","돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.","함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."]],["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
+const HISTORY=[["4.3",["영수증을 더 정확하게 읽어요. 영수증 합계와 맞춰 보고 잘못 읽은 숫자와 빠진 금액을 바로잡아 노란 줄로 알려 줘요. 확인 창의 [✏️ 고치기]를 누르면 전체 목록이 수정 모드가 되어 고칠 줄의 이름·금액만 바로 고칠 수 있어요. 금액은 검산에만 쓰고 저장하지 않아요."]],["4.2",["장보기 탭 맨 아래에 [🧾 장 본 영수증]이 생겼어요. 영수증 사진을 고르거나 쿠팡 같은 글을 붙여넣으면 산 것을 읽어서, 사야 할 것에 있던 건 ‘샀어요’로 옮기고 없던 건 샀어요에 더해요. 읽은 걸 확인하고 [이대로 붙이기]만 누르면 끝이고, 틀린 건 눌러서 고칠 수 있어요. 안 읽히면 다시 고르기·글 붙여넣기·직접 적기를 고를 수 있어요. 사진은 저장하지 않고 산 것 이름만 가족과 함께 봐요. (선택)"]],["4.1",["오늘 밥상 화면의 칸 사이 간격을 줄여서 한눈에 더 많이 보여요. 글자와 버튼 크기는 그대로예요."]],["4.0",["지난 날에도 ‘나 못 먹었어요’를 표시할 수 있어요. 달력에서 그날을 눌러 고치거나, 오늘 밥상의 어제 안내에서 바로 누르세요. 늦게 들어와 못 먹은 다음 날에도 고칠 수 있어요. (선택)"]],["3.9",["식단 담당을 아직 정하지 않았을 때도 식단 위쪽에 가로 초록 바로 보여요. ‘담당 가족 모두 · 누구나 고쳐요’라고 알려 주고, 오른쪽 [담당 정하기]로 바로 정할 수 있어요. (선택)"]],["3.8",["‘새로워요’ 표시가 업데이트 후 처음 연 뒤, 앱을 닫았다가 다시 열면 사라져요. 기능을 써 본 표시도 바로 사라지도록 고쳤어요."]],["3.7",["가족이 먹고 싶어요·식단·장보기를 바꾸면 ‘인찬엄마가 먹고 싶어요에서 ‘1등급한우’를 뺐어요’처럼 누가 무엇을 했는지 알려 줘요.","맨 위 [🕘 최근 변경]에서 지난 7일(최대 30개)의 변경을 볼 수 있고, 지운 것은 [되살리기]로 되돌려요. 가족이 모두 3.7로 업데이트해야 기록이 빠짐없이 남아요."]],["3.6",["식단 위쪽의 담당 표시를 한 줄로 줄이고 더 눈에 띄게 했어요. 담당이 아닌 폰은 ‘이 폰은 보기만’이라고 보여요.","가족이 오늘 메뉴를 바꾸면 오늘 저녁 메뉴 카드 위에 ‘오늘 메뉴가 바뀌었어요’ 띠로 알려 주고, 남긴 이유도 함께 보여요."]],["3.5",["식단을 바꾼 직후 [이유 남기기]가 잠깐 떠요. 한 줄 이유를 남기면 그 날짜 카드와 오늘 밥상에 ‘💬 엄마 · 외식으로 바꿨어요’로 가족에게 보여요. 가족이 함께 쓸 때만 나오는 선택 기능이에요."]],["3.4",["지운 메뉴는 아래에 잠깐 뜨는 [되돌리기]로 바로 복구할 수 있어요.","‘계획’ 탭의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)","식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정할 수 있어요. 담당이 아닌 가족은 식단 내용만 보기 전용이고, ‘못 먹어요’ 표시와 식단 공유는 그대로예요. 누구든 바꾸거나 풀 수 있어요. (선택)","가족 코드로 참여할 때 코드 문제인지 연결 문제인지 나눠서 알려 줘요.","업데이트 후 처음 열면 ‘새로 바뀐 점’이 한 번 떠요."]],["3.3",["주간 계획의 [식단 공유]에서 이번 주 식단을 예쁜 이미지로 만들어 카톡 등으로 보낼 수 있어요. 보내기 전에 미리 볼 수 있고, 글로 복사도 그대로 있어요.","처음 쓰는 분을 위해 비어 있는 주에는 자동 짜기·지난주 가져오기를 한 줄로 알려 줘요.","가족 식단표를 만든 뒤 아직 아무도 들어오지 않았다면 초대 글을 다시 보낼 수 있고, 가족이 합류하면 알려 줘요. 설정의 가족 공유에도 함께 보는 가족 수가 보여요."]],["3.2",["이름을 바꾸면 PC·폰에 남은 옛 이름도 함께 바뀌어, 가족 목록에 같은 사람이 두 번 보이지 않아요.","이미 두 번 보이는 이름은 설정에서 ‘나예요’를 눌러 합칠 수 있어요."]],["3.1",["아래 메뉴를 둥근 바와 그림 아이콘으로 바꿨어요. ‘메뉴·메모’는 ‘메뉴·레시피’로 이름을 바꿨어요.","메뉴 목록에 ▶영상·블로그 표시가 붙고, 위쪽 버튼으로 레시피가 있는 메뉴나 즐겨찾기만 모아 볼 수 있어요.","설정을 가족 공유 / 나와 우리 집 / 보관과 도움 세 묶음으로 정리했어요. 눌러서 열어 봐요."]],["3.0",["메뉴를 누르면 [레시피] 탭이 먼저 보이고, 그 옆에 [메모] 탭이 있어요."]],["2.9",["설정의 가족 공유에 [코드만 복사] 버튼을 넣었어요. 카톡 초대 글 없이 가족 코드만 복사해 문자·메모 등으로 알려 줄 수 있어요. 화면에는 전과 같이 코드 앞부분만 보여요.","메뉴를 누르면 [메모] [레시피] 탭이 생겼어요. 자주 보는 유튜브·블로그 주소를 메뉴당 3개까지 넣으면 ‘메뉴 이름 레시피 영상 ▶’ 카드로 보여요. 누르면 유튜브가 열리고 뒤로 가면 앱으로 돌아와요. 가족 모두에게 함께 보여요.","설정의 끼니 시간 버튼 12개를 ‘우리 집 밥 시간’ 선택 3개로 줄였어요. 기본은 아침 7시, 점심 12시, 저녁 7시이고 30분 단위로 골라요. 밥 시간이 가까울 때 ‘못 먹어요’를 누르면 따뜻하게 안내해요."]],["2.8",["오늘 밥상 카드를 칸으로 나눴어요. 오늘 저녁 메뉴, 저녁이 바뀌었을 때, 함께 먹는 가족이 서로 다른 색 칸으로 보여요.","반찬이 없는 날은 빈 밑반찬 줄을 숨겨요."]],["2.7",["계획 탭의 주간 계획·월간 달력·돌아보기를 아이콘이 있는 알약 버튼으로 바꿔 한눈에 보여요.","주간 계획 위쪽을 줄여 요일별 메뉴가 더 빨리 보여요. 요약은 한 줄로, '건강식으로 짜기'는 '가볍게 짜기'로 바꿨어요.","오늘 밥상·장보기·메뉴·설정 화면을 같은 디자인으로 다듬었어요. 메뉴·메모에 메뉴 찾기가 생겼어요."]],["2.6",["가족을 쉽게 초대하고 합류할 수 있어요. 가족 초대하기 한 번이면 초대 글이 만들어지고, 받은 가족은 글을 복사해 두고 앱을 열어 [참여하기]만 누르면 돼요.","이미 식단이 있는 폰도 가족 식단에 합칠 수 있어요.","가족이 바꾼 오늘 메뉴에 표시가 붙어요. 설정에서 폰 알림을 켜면(선택) 앱을 닫아도 바뀐 걸 알려 줘요.","앱 평가하기를 설정에 두었어요. 요약 이미지 아래에 앱 이름 한 줄이 들어가요."]],["2.5",["아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.","돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.","함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."]],["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
 (function(){const el=$('#verCard');if(!el)return;
   el.innerHTML=`<div class="verrow"><span>앱 버전</span><b>${esc(APP_VERSION)}</b></div>
     <details style="margin-top:10px"><summary>버전별 업데이트 내역 보기</summary><div class="verhist">${HISTORY.map(([v,l])=>`<b>${esc(v)}</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div></details>`})();
@@ -2447,6 +2453,182 @@ try{if(localStorage.getItem('wd.onboard')||syncReady(syncCfg()))setTimeout(()=>{
 setTimeout(checkUpdate,1200);
 start34();
 $('#tipOpen').onclick=()=>shareTip(true);
+/* ---------- 4.3 영수증 읽기 정확도: 줄 맞추기·합계 검산·숫자 바로잡기 (폰 안에서만) ---------- */
+var RC43=(function(){
+var CONF={'0':'896','1':'74','2':'7','3':'89','4':'1','5':'68','6':'580','7':'12','8':'0693','9':'038'};
+var SUMMARY=/할\s*인|면세|과세|부가세|VAT|합\s*계|합\s*게|지불|승인|결제|받을|거스름|포인트|적립|카드|현금|상품\s*금액|총\s*(액|금액|주문)/i;
+var TOTALK=/합\s*계|합\s*게|합\s*겨|지불|승인\s*금|결제\s*금|결제금액|받을\s*금|총\s*(결제|금액|액)/;
+var NOTITEM=/합\s*계|합\s*게|할\s*인|면세|과세|부가세|VAT|결제|승인|카드|사업자|대표|전화|\btel\b|주소|받는\s*(분|사람)|수령|배송|연락|휴대|이메일|주문\s*(번호|일|상세|내역)|영수증|거스름|잔액|쿠폰|포인트|적립|감사|교환|환불|가맹|매출|단가|수량|금액|상품\s*명|품\s*명|www\.|https?:|판매일|계산대|거래|고\s*객|마트|마켓|슈퍼|편의점|스토어|㈜|\(주\)|주식회사|바코드|\d{2,4}-\d{3,4}-\d{4}|\d{4}[-./]\d{1,2}[-./]\d{1,2}|\d{1,2}:\d{2}/i;
+function fixNum(s){return String(s).replace(/[ㅣ|!lI](?=,\d{3})/g,'1')}
+function money(line){ // 금액 같은 숫자 조각들 (바코드·상품코드는 뺌)
+  var out=[],m=fixNum(line).match(/\d[\d,]*\d|\d/g)||[];
+  m.forEach(function(tok){var dg=tok.replace(/,/g,'');
+    if(dg.length>=7)return;
+    if(dg.length>=6&&tok.indexOf(',')<0)return;
+    var g=tok.split(',');
+    if(g.length>1&&g[g.length-1].length===4){dg=dg.slice(0,-1)} // 끝에 잘못 붙은 한 글자
+    if(dg.length<3)return;
+    var v=parseInt(dg,10);if(v>=100&&v<=9999999)out.push(v)});
+  return out}
+function variants(v,maxEd,exact){ // 값 → {후보값:고친횟수}
+  var s=String(v),res={};res[s]=0;if(exact)return res;
+  function rec(i,cur,ed){if(i===s.length){if(ed>0){var n=cur.replace(/^0+/,'');if(n&&(res[n]===undefined||res[n]>ed))res[n]=ed}return}
+    rec(i+1,cur+s[i],ed);
+    if(ed<maxEd){var alts=CONF[s[i]]||'';for(var k=0;k<alts.length;k++)rec(i+1,cur+alts[k],ed+1)}}
+  rec(0,'',0);var o={};Object.keys(res).forEach(function(k){o[parseInt(k,10)]=res[k]});return o}
+function ham(a,b){if(a.length!==b.length)return 99;var d=0;for(var i=0;i<a.length;i++)if(a[i]!==b[i])d++;return d}
+var VOCAB='양파 대파 쪽파 마늘 생강 고추 청양고추 풋고추 오이 당근 감자 고구마 무 배추 양배추 상추 청상추 적상추 깻잎 시금치 부추 콩나물 숙주 브로콜리 파프리카 애호박 호박 가지 버섯 새송이 표고 팽이 느타리 토마토 방울토마토 대추토마토 사과 배 귤 감귤 한라봉 오렌지 바나나 포도 딸기 수박 참외 복숭아 키위 레몬 블루베리 망고 파인애플 계란 달걀 유정란 두부 순두부 우유 저지방 두유 치즈 슬라이스치즈 버터 요거트 요구르트 생크림 한돈 한우 오겹살 삼겹살 목살 앞다리 뒷다리 갈비 불고기 제육 돼지갈비 닭가슴살 닭다리 닭볶음 닭고기 오리 소고기 돼지고기 다짐육 차돌박이 등심 안심 사태 대패삼겹살 한돈오겹살 한돈앞다리 한돈삼겹살 한돈목살 고등어 갈치 삼치 꽁치 오징어 낙지 새우 조기 명태 동태 연어 참치 굴비 멸치 어묵 맛살 김 미역 다시마 파래 쌀 현미 찹쌀 보리 잡곡 밀가루 부침가루 튀김가루 빵가루 전분 설탕 소금 후추 참기름 들기름 식용유 올리브유 간장 진간장 국간장 된장 고추장 쌈장 고춧가루 식초 맛술 미림 마요네즈 케첩 카레 짜장 라면 국수 소면 파스타 스파게티 우동 당면 즉석밥 햇반 식빵 모닝빵 만두 물만두 김치 깍두기 단무지 장아찌 포카리스웨트 사이다 콜라 생수 탄산수 커피 맥심 보리차 주스 이온음료 맥주 소주 처음처럼 참이슬 새로 막걸리 와인 롯데 농심 오뚜기 풀무원 대상 청정원 비비고 하림 동원 사조 해태 오리온 크라운 칸쵸 새우깡 감자깡 양파링 포카칩 초코파이 오징어땅콩 쿠키 과자 비스킷 초콜릿 젤리 사탕 아이스크림 신라면 진라면 너구리 얼큰한 얼큰한너구리멀티 안성탕면 짜파게티 육개장 컵라면 멀티 휴지 화장지 물티슈 세제 샴푸 린스 칫솔 치약 비누 키친타올 쓰레기봉투 위생장갑 호일 랩 지퍼백 건전지'.split(/\s+/);
+var VSET={};VOCAB.forEach(function(w){VSET[w]=1});
+function fixName(t,extra){
+  var dict=VSET,ex=extra||[];
+  function has(w){return dict[w]||ex.indexOf(w)>=0}
+  var all=VOCAB.concat(ex);
+  return t.replace(/[가-힣]{2,}/g,function(run){
+    if(has(run))return run;
+    var best=null;
+    if(run.length===2){var c2=all.filter(function(w){return w.length===2&&ham(run,w)===1});return c2.length===1?c2[0]:run}
+    all.forEach(function(w){if(w.length<3||w.length>run.length)return;
+      for(var i=0;i+w.length<=run.length;i++){var win=run.substr(i,w.length);if(win===w)return;if(ham(win,w)===1&&has(win)===undefined){}
+        if(ham(win,w)===1&&!has(win)){if(!best||w.length>best.w.length)best={i:i,w:w};}}});
+    if(best)return run.substr(0,best.i)+best.w+run.substr(best.i+best.w.length);
+    return run})}
+function cleanName(s){
+  s=String(s||'').replace(/\s+/g,' ').trim()
+   .replace(/([가-힣])\s*[!ㅣ|l]\s*(봉|개|팩|판|단|병|캔|구|입)/g,'$1 1$2').replace(/^[!ㅣ|]\s*(봉|개)/,'1$1')
+   .replace(/(\d)\.(\d)\s*\[ㄴ?/g,'$1.$2L').replace(/(\d)\s*[|l1]\s*\*\s*(\d)\s*입/g,'$1ml*$2입')
+   .replace(/[ㅣ|]+/g,' ').replace(/[ㄴ]\s*$/,'').replace(/[^0-9A-Za-z가-힣\s().\-*+\/&]/g,' ').replace(/\s+/g,' ').trim();
+  var toks=s.split(' ').filter(function(k){return k});
+  toks=toks.filter(function(k,i){if(i===0)return true;if(!/\d/.test(k))return true;
+    return /^\d+(\.\d+)?[가-힣a-zA-Z]{1,3}$/.test(k)});
+  if(toks.length&&/^(1|ㅣ|!|l)$/.test(toks[toks.length-1]))toks.pop();
+  while(toks.length>1&&/^[가-힣]$/.test(toks[toks.length-1]))toks.pop();
+  while(toks.length>1&&/^\d+입$/.test(toks[toks.length-1])&&/^[^\d]*$/.test(toks[toks.length-2]||'x'))toks.pop();
+  s=toks.join(' ').replace(/^[*#\-•·\s]+/,'').trim();
+  return s.slice(0,40)}
+/* 한 번 읽은 글 → 품목(이름·읽은 단가·읽은 금액) + 합계 후보 */
+function parse(text){
+  var lines=String(text||'').split(/\r?\n/).map(function(x){return x.replace(/[​\t]+/g,' ')});
+  var res={names:[],items:[],totals:[],tax:{},disc:0,mode:'one'};
+  var nameRe=/^\W{0,6}(\d{1,3})[ .)\]]\s*([가-힣a-zA-Z(\[*].*)$/;
+  var seq=[],inSum=false,nn=0,two=false;
+  // 상품 번호(001 이름) 줄이 2개 이상이면 '두 줄 영수증'
+  lines.forEach(function(l){var m=l.match(nameRe);if(m&&/[가-힣]{2,}/.test(m[2])&&!NOTITEM.test(m[2]))nn++});
+  two=nn>=2;res.mode=two?'two':'one';
+  lines.forEach(function(raw){
+    var l=raw.trim();if(!l)return;
+    if(SUMMARY.test(l)&&!/^\W{0,6}\d{1,3}[ .)]\s*[가-힣]/.test(l)){
+      inSum=true;var mm=money(l);
+      if(/할\s*인/.test(l)&&mm.length)res.disc=mm[mm.length-1];
+      else if(/면세/.test(l)&&mm.length)res.tax.m=mm[mm.length-1];
+      else if(/과세/.test(l)&&mm.length)res.tax.g=mm[mm.length-1];
+      else if(/부가세|VAT/i.test(l)&&mm.length)res.tax.v=mm[mm.length-1];
+      else if(TOTALK.test(l)||/^\W*[가-힣]\s*[가-힣]\s*[:：]/.test(l)){if(mm.length)res.totals.push(mm[mm.length-1])}
+      else if(/상품\s*금액/.test(l)&&mm.length)res.totals.push(mm[mm.length-1]);
+      return}
+    if(inSum)return;
+    if(two){
+      var m=l.match(nameRe);
+      if(m&&/[가-힣]{2,}/.test(m[2])&&!NOTITEM.test(m[2])){seq.push({k:'n',t:m[2]});return}
+      var mn=money(l);if(mn.length)seq.push({k:'$',v:mn,raw:l});
+    }else{
+      if(NOTITEM.test(l))return;
+      var nm=l.replace(/\s+[-+]?[\d,]+(\.\d+)?\s*원?(\s+[-+]?[\d,]+\s*원?)*\s*$/,'').replace(/\s+\d+\s*(개|EA|ea)\s*$/,'').replace(/^\s*\d{1,3}[.)\]]?\s+(?=\D)/,'').trim();
+      var mo=money(l.slice(nm.length));if(/[가-힣]{2,}/.test(nm)&&nm.length>=2)seq.push({k:'1',t:nm,v:mo})}
+  });
+  var names=seq.filter(function(s){return s.k==='n'}),nums=seq.filter(function(s){return s.k==='$'});
+  if(two){
+    var items=[];
+    if(names.length===nums.length){names.forEach(function(n,i){items.push({t:n.t,v:nums[i].v})})}
+    else{var cur=null;seq.forEach(function(s){if(s.k==='n'){cur={t:s.t,v:null};items.push(cur)}else if(cur&&!cur.v)cur.v=s.v});}
+    res.items=items.map(function(it){var v=it.v||[];return {t:it.t,u:v.length>1?v[0]:null,a:v.length?v[v.length-1]:null}})
+  }else{
+    var seen={};
+    seq.forEach(function(s){if(seen[s.t])return;seen[s.t]=1;var v=s.v||[];res.items.push({t:s.t,u:v.length>1?v[0]:null,a:v.length?v[v.length-1]:null})})}
+  res.items=res.items.slice(0,40);
+  return res}
+/* 합계 후보 중 가장 믿을 만한 값 */
+function totalCands(parses){
+  var c=[];parses.forEach(function(p){p.totals.forEach(function(v){c.push(v)});var x=p.tax;if(x&&x.v&&(x.m||x.g)&&(x.m||0)+(x.g||0)+x.v>=1000)c.push((x.m||0)+(x.g||0)+x.v)});
+  var sc={};c.forEach(function(v){var s=0;c.forEach(function(w){if(w===v)s+=2;else if(ham(String(v),String(w))===1)s+=1});sc[v]=s});
+  return Object.keys(sc).map(function(k){return {v:+k,s:sc[k]}}).sort(function(a,b){return b.s-a.s}).slice(0,4)}
+function pickTotal(parses){
+  var c=[];parses.forEach(function(p){p.totals.forEach(function(v){c.push(v)});var x=p.tax;if(x&&x.v&&(x.m||x.g)&&(x.m||0)+(x.g||0)+x.v>=1000)c.push((x.m||0)+(x.g||0)+x.v)});
+  if(!c.length)return null;
+  var best=null,bs=-1;
+  c.forEach(function(v){var s=0;c.forEach(function(w){if(w===v)s+=2;else{var a=String(v),b=String(w);if(ham(a,b)===1)s+=1}});if(s>bs){bs=s;best=v}});
+  return {v:best,score:bs,n:c.length}}
+/* 줄마다 후보(읽은 숫자에서 흔한 오인식을 고친 값)와 비용 */
+function cands(obsList,exact,B){
+  var map={};
+  function add(a,u,cost,flag){if(map[a]===undefined||map[a].cost>cost)map[a]={a:a,u:u,cost:cost,flag:flag}}
+  obsList.forEach(function(o){
+    var VA=o.a!=null?variants(o.a,2,exact):null,VU=o.u!=null?variants(o.u,2,exact):null;
+    if(VA&&VU){
+      Object.keys(VU).forEach(function(us){var u=+us;Object.keys(VA).forEach(function(as){var a=+as;if(u>0&&a%u===0&&a/u>=1&&a/u<=9){var c=VU[us]+VA[as]+(a/u>1?1:0);if(c<=B)add(a,u,c,c>0?'fix':'ok')}})});
+      add(o.a,o.u,3,'bad')}
+    else if(VA){Object.keys(VA).forEach(function(as){var c=VA[as]+(exact?0:0.5);if(c<=B)add(+as,null,c,VA[as]>0?'fix':'ok')})}
+    else if(VU){Object.keys(VU).forEach(function(us){var c=VU[us]+2;if(c<=B)add(+us,+us,c,'guess')})}
+  });
+  var arr=Object.keys(map).map(function(k){return map[k]}).sort(function(x,y){return x.cost-y.cost}).slice(0,60);
+  return arr}
+function solve(items,T,exact){
+  // items[i].obs=[{u,a}]; 반환 {rows:[{a,u,flag,obs}], sumOk, T}
+  var n=items.length,best=null;
+  var tot=items.map(function(it){return it.obs});
+  function finish(pick,sum,okSum){
+    var cc=0;pick.forEach(function(p){cc+=p?p.cost:9});
+    return {cost:cc,rows:pick.map(function(p,i){return {a:p?p.a:null,flag:p?p.flag:'miss',obsA:items[i].obs[0]?items[i].obs[0].a:null}}),sum:sum,sumOk:okSum,T:T}}
+  if(!T){ // 합계 없음: 줄별로 가장 그럴듯한 값만
+    var pick=items.map(function(it){var c=cands(it.obs,exact,2);return c[0]||null});
+    var s=0;pick.forEach(function(p){s+=p?p.a:0});return finish(pick,s,false)}
+  var missing=[];items.forEach(function(it,i){if(!it.obs.some(function(o){return o.a!=null}))missing.push(i)});
+  var maxB=exact?0:4;
+  for(var B=0;B<=maxB&&!best;B++){
+    var C=items.map(function(it,i){return missing.indexOf(i)>=0?[null]:cands(it.obs,exact,B)});
+    if(C.some(function(c,i){return missing.indexOf(i)<0&&!c.length}))continue;
+    var found=null,nodes=0,fb=99;
+    (function dfs(i,sum,cost,pick,miss){
+      if(nodes>1500000||cost>B)return;nodes++;
+      if(i===n){
+        if(miss===0){if(sum===T&&(found===null||cost<fb)){found=pick.slice();fb=cost}}
+        else if(miss===1){var r=T-sum;var mi=missing[0];var ok=r>=100&&r<=2000000;
+          if(ok){var p2=pick.slice();p2[mi]={a:r,u:null,cost:2,flag:'guess'};if(cost+2<=B||B>=2){if(found===null||cost+2<fb){found=p2;fb=cost+2}}}}
+        return}
+      if(missing.indexOf(i)>=0){pick.push(null);dfs(i+1,sum,cost,pick,miss+1);pick.pop();return}
+      var cs=C[i];for(var k=0;k<cs.length;k++){var c=cs[k];if(cost+c.cost>B)continue;pick.push(c);dfs(i+1,sum+c.a,cost+c.cost,pick,miss);pick.pop()}
+    })(0,0,0,[],0);
+    if(found){var sm=0;found.forEach(function(p){sm+=p?p.a:0});best=finish(found,sm,true)}
+  }
+  if(best)return best;
+  // 합계와 안 맞음: 줄별 최선 + 빠진 한 줄은 차액으로 추정
+  var pick2=items.map(function(it,i){if(missing.indexOf(i)>=0)return null;var c=cands(it.obs,exact,2);return c[0]||null});
+  var s2=0;pick2.forEach(function(p){s2+=p?p.a:0});
+  if(missing.length===1&&T-s2>=100)pick2[missing[0]]={a:T-s2,u:null,cost:2,flag:'guess'};
+  var s3=0;pick2.forEach(function(p){s3+=p?p.a:0});
+  var r=finish(pick2,s3,s3===T);return r}
+/* 여러 번 읽은 글(texts)을 합쳐서 품목 목록을 만듦. extra: 가족이 쓰던 이름들 */
+function build(texts,extra,exact){
+  var ps=texts.map(parse);
+  var main=ps.slice().sort(function(a,b){return b.items.length-a.items.length})[0];
+  var n=main.items.length;
+  var items=main.items.map(function(it,i){
+    var obs=[],names=[];
+    ps.forEach(function(p){if(p.items.length===n){var q=p.items[i];names.push(q.t);if(q.a!=null||q.u!=null)obs.push({u:q.u,a:q.a})}});
+    if(!obs.length)obs.push({u:it.u,a:it.a});
+    // 이름: 사전에 가장 잘 맞는 읽기
+    var bestT=it.t,bs=-1;names.forEach(function(t){var c=cleanName(t),f=fixName(c,extra),s=0;(f.match(/[가-힣]{2,}/g)||[]).forEach(function(r){if(VSET[r]||(extra||[]).indexOf(r)>=0)s+=r.length});if(s>bs){bs=s;bestT=t}});
+    var nm=fixName(cleanName(bestT),extra);
+    return {t:nm,raw:cleanName(bestT),obs:obs}});
+  var tc=totalCands(ps);
+  var sol=null;
+  tc.forEach(function(t){var s=solve(items,t.v,!!exact);if(!sol||(s.sumOk&&!sol.sumOk)||(s.sumOk&&sol.sumOk&&s.cost<sol.cost))sol=s});
+  if(!sol)sol=solve(items,null,!!exact);
+  var rows=items.map(function(it,i){var r=sol.rows[i];return {t:it.t,a:r.a,flag:(r.flag==='fix'&&items[i].obs.some(function(o){return o.a===r.a}))?'ok':r.flag==='fix'||r.flag==='guess'||r.flag==='miss'||r.flag==='bad'?r.flag:'ok',obsA:r.obsA}});
+  // 이름만 있고 금액이 전혀 없으면 금액 표시 없이
+  return {rows:rows,T:sol.T,sum:sol.sum,sumOk:sol.sumOk,hasAmt:rows.some(function(r){return r.a!=null}),disc:ps[0].disc}}
+return {parse:parse,build:build,cleanName:cleanName,fixName:fixName,money:money,variants:variants,pickTotal:pickTotal}
+})();
+
 /* ---------- 4.2 영수증 붙이기: 사진/글 → 산 품목 → '샀어요' (사진·원문 글은 저장하지 않고, 품목 이름만 가족과 공유) ---------- */
 var RC_SKIP=/합\s*계|총\s*(액|금액|결제)|받을\s*금|결제|승인|카드|부가세|과세|면세|사업자|대표|전화|\btel\b|\bfax\b|주소|받는\s*(분|사람)|수령|배송|연락|휴대|이메일|e-?mail|주문\s*(번호|일|상세|내역)|영수증|거스름|잔액|할인|쿠폰|포인트|적립|감사합|교환|환불|가맹|매출|단가|수량|금액|상품\s*명|품\s*명|www\.|https?:|\d{2,4}-\d{3,4}-\d{4}|\d{4}[-./]\d{1,2}[-./]\d{1,2}|\d{1,2}:\d{2}|마트|마켓|슈퍼|편의점|스토어|㈜|\(주\)|주식회사/i;
 function parseRc42(text){
@@ -2499,42 +2681,64 @@ function rcFail42(why){
     '<button class="rcbig42 g" id="rcC">직접 적기<small>산 것을 한 줄씩 적어요</small></button><div class="btnrow"><button class="btn" id="rcX">닫기</button></div>',function(){
     document.getElementById('rcA').onclick=function(){closeModal();document.getElementById('rcFile').click()};
     document.getElementById('rcB').onclick=function(){rcPasteSheet42()};
-    document.getElementById('rcC').onclick=function(){rcReview42(['','',''],true)};
+    document.getElementById('rcC').onclick=function(){rcReview42(null,true)};
     document.getElementById('rcX').onclick=closeModal});
 }
-function rcReview42(names,manual){
-  var rows=names.map(function(t){return {t:t,on:true,cid:null}});
-  function draw(){
+function rcVocab43(){var o=[];S.cart.forEach(function(x){(String(x.text).match(/[가-힣]{3,}/g)||[]).forEach(function(w){if(o.indexOf(w)<0)o.push(w)})});return o}
+function rcNum43(n){return n==null?'':String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function rcReview42(info,manual){
+  var rows=manual?[0,1,2].map(function(){return {t:'',a:null,flag:'ok',on:true,cid:null}}):info.rows.map(function(r){return {t:r.t,a:r.a,flag:r.flag,obsA:r.obsA,on:true,cid:null}});
+  var T=manual?null:info.T,hasAmt=!manual&&info.hasAmt,edit=!!manual,box=null;
+  function sum(){var s=0;rows.forEach(function(r){if(r.on&&r.a!=null)s+=r.a});return s}
+  function statHtml(){
     rcMatch42(rows);
-    var m=rows.filter(function(r){return r.cid}).length,n=rows.filter(function(r){return r.t.trim()}).length;
-    var head=manual?'<div class="rcbox42">산 것을 적어 주세요. 사야 할 것에 있던 건 알아서 ‘샀어요’로 옮겨요.</div>':'<div class="rcbox42 ok">'+n+'개를 읽었어요'+(m?', 그중 <b>'+m+'개는 사야 할 것에 있던 거예요</b>':'')+'. 틀린 줄만 눌러서 고치세요. 필요 없는 줄은 체크를 빼세요.</div>';
-    var body=rows.map(function(r,i){return '<div class="li'+(r.on?'':' off')+'" data-i="'+i+'"><input type="checkbox" '+(r.on?'checked':'')+' aria-label="포함"><input type="text" maxlength="40" value="'+esc(r.t)+'" aria-label="산 것 이름"><span class="tg"'+(r.cid?'':' hidden')+'>샀어요로</span></div>'}).join('');
-    return head+'<div class="list rcl42" id="rcRows">'+body+'</div><div class="btnrow" style="justify-content:stretch"><button class="btn" id="rcMore" style="flex:1">+ 줄 더하기</button><button class="rcbig42" id="rcOk" style="flex:2">이대로 붙이기</button></div>';
+    var m=rows.filter(function(r){return r.on&&r.cid}).length,n=rows.filter(function(r){return r.on&&r.t.trim()}).length,mt=m?' 그중 <b>'+m+'개는 사야 할 것에 있던 거예요</b>.':'',cls='',h='';
+    if(manual){return '<div class="rcbox42">산 것을 적어 주세요. 사야 할 것에 있던 건 알아서 ‘샀어요’로 옮겨요.</div>'}
+    if(!hasAmt){return '<div class="rcbox42 ok">'+n+'개를 읽었어요.'+mt+' 틀린 줄은 [✏️ 고치기]로 고치세요. 필요 없는 줄은 체크를 빼세요.</div>'}
+    var s=sum(),nfix=rows.filter(function(r){return r.on&&(r.flag==='fix'||r.flag==='guess')}).length;
+    if(T&&s===T){cls=' ok';h='✅ 품목 합계 <b>'+rcNum43(s)+'원</b>이 영수증 합계와 맞아요.'+(nfix?' 틀리게 읽은 숫자 '+nfix+'곳은 합계에 맞춰 바로잡았어요(노란 줄).':'')}
+    else if(T){cls=' warn';var d=s-T;h='⚠️ 품목 합계 <b>'+rcNum43(s)+'원</b>, 영수증 합계 <b>'+rcNum43(T)+'원</b>으로 '+rcNum43(Math.abs(d))+'원 '+(d<0?'모자라요':'남아요')+'. 노란 줄이나 빠진 줄이 있는지 [✏️ 고치기]로 확인해 주세요.'}
+    else{h='영수증 합계를 못 찾아서 숫자 검산은 못 했어요. 금액이 틀리면 [✏️ 고치기]로 고치세요.'}
+    return '<div class="rcbox42'+cls+'">'+h+mt+'<br><small>금액은 맞는지 확인하는 데만 쓰고 저장하지 않아요.</small></div>'}
+  function noteOf(r){
+    if(r.ed)return '';
+    if(r.flag==='fix')return '읽은 값 '+rcNum43(r.obsA)+' → '+rcNum43(r.a)+'(으)로 바로잡았어요';
+    if(r.flag==='guess')return '금액이 안 읽혀서 합계 차이로 추정했어요';
+    if(r.flag==='bad'||r.flag==='miss')return '금액이 안 맞아 보여요. 확인해 주세요';
+    return ''}
+  function listHtml(){
+    return '<div class="list rcl42" id="rcRows">'+rows.map(function(r,i){var y=!edit&&hasAmt&&!r.ed&&r.flag&&r.flag!=='ok',nt=noteOf(r);
+      return '<div class="li'+(r.on?'':' off')+(y?' yel':'')+'" data-i="'+i+'"><input type="checkbox" '+(r.on?'checked':'')+' aria-label="포함">'+
+        (edit?'<input type="text" class="nm" maxlength="40" value="'+esc(r.t)+'" aria-label="산 것 이름">'+(hasAmt?'<input type="text" class="am" inputmode="numeric" value="'+(r.a==null?'':rcNum43(r.a))+'" aria-label="금액" placeholder="금액">':'')
+          :'<span class="nmv">'+esc(r.t||'(비어 있음)')+(y&&nt?'<small>'+esc(nt)+'</small>':'')+'</span>'+(hasAmt?'<span class="amv">'+(r.a==null?'—':rcNum43(r.a))+'</span>':''))+
+        (edit?'':'<span class="tg"'+(r.cid?'':' hidden')+'>샀어요로</span>')+'</div>'}).join('')+'</div>'}
+  function btnHtml(){return '<div class="btnrow" style="justify-content:stretch">'+(manual?'':'<button class="btn" id="rcEd" style="flex:1">'+(edit?'완료':'✏️ 고치기')+'</button>')+'<button class="btn" id="rcMore" style="flex:1">+ 줄 더하기</button></div><button class="rcbig42" id="rcOk">이대로 붙이기</button>'}
+  function refresh(){var s=box.querySelector('#rcStat');if(s)s.innerHTML=statHtml()}
+  function draw(){box.innerHTML='<div id="rcStat">'+statHtml()+'</div>'+listHtml()+btnHtml();wire()}
+  function wire(){
+    box.querySelectorAll('.li').forEach(function(li){var i=+li.dataset.i;
+      li.querySelector('input[type=checkbox]').onchange=function(e){rows[i].on=e.target.checked;li.classList.toggle('off',!rows[i].on);refresh()};
+      var nm=li.querySelector('input.nm'),am=li.querySelector('input.am');
+      if(nm)nm.oninput=function(e){rows[i].t=e.target.value;rows[i].ed=true;refresh()};
+      if(am)am.oninput=function(e){var d=e.target.value.replace(/[^0-9]/g,'');rows[i].a=d?parseInt(d,10):null;rows[i].ed=true;refresh()}});
+    var ed=box.querySelector('#rcEd');if(ed)ed.onclick=function(){edit=!edit;draw()};
+    box.querySelector('#rcMore').onclick=function(){rows.push({t:'',a:null,flag:'ok',on:true,cid:null,ed:true});edit=true;draw();var ins=box.querySelectorAll('input.nm');ins[ins.length-1].focus()};
+    box.querySelector('#rcOk').onclick=rcConfirm}
+  function rcConfirm(){
+    var pick=rows.filter(function(r){return r.on&&r.t.trim()});
+    if(!pick.length){toast('붙일 품목이 없어요');return}
+    rcMatch42(rows);
+    var rid=uid(),now=Date.now(),names=[],moved=0;
+    pick.forEach(function(r,i){var t=r.t.trim().slice(0,40);
+      var c=r.cid&&S.cart.find(function(x){return x.id===r.cid&&!x.done});
+      if(c){c.done=true;c.rc=rid;c.rt=now;moved++;names.push(c.text)}
+      else{S.cart.push({id:uid(),text:t,done:true,at:now+i,rc:rid,rt:now});names.push(t)}});
+    logAdd37({k:'rc',nm:names});
+    save();renderCart();closeModal();nwDone('rcp');
+    toast(names.length+'가지를 샀어요에 담았어요'+(moved?' · 목록에서 '+moved+'개 체크':''));
   }
-  openModal('<div class="sheethead"><h2>'+(manual?'산 것 적기':'이렇게 읽었어요')+'</h2><button class="btn" id="rcX">닫기</button></div><div id="rcBody">'+draw()+'</div>',function(){
-    var box=document.getElementById('rcBody');
-    function tags(){rcMatch42(rows);box.querySelectorAll('.li').forEach(function(li){var r=rows[+li.dataset.i];li.classList.toggle('off',!r.on);li.querySelector('.tg').hidden=!r.cid})}
-    function wire(){
-      box.querySelectorAll('.li').forEach(function(li){var i=+li.dataset.i;
-        li.querySelector('input[type=checkbox]').onchange=function(e){rows[i].on=e.target.checked;tags()};
-        li.querySelector('input[type=text]').oninput=function(e){rows[i].t=e.target.value;tags()}});
-      document.getElementById('rcMore').onclick=function(){rows.push({t:'',on:true,cid:null});box.innerHTML=draw();wire();var ins=box.querySelectorAll('input[type=text]');ins[ins.length-1].focus()};
-      document.getElementById('rcOk').onclick=rcConfirm;
-    }
-    function rcConfirm(){
-      var pick=rows.filter(function(r){return r.on&&r.t.trim()});
-      if(!pick.length){toast('붙일 품목이 없어요');return}
-      rcMatch42(rows);
-      var rid=uid(),now=Date.now(),names=[],moved=0;
-      pick.forEach(function(r,i){var t=r.t.trim().slice(0,40);
-        var c=r.cid&&S.cart.find(function(x){return x.id===r.cid&&!x.done});
-        if(c){c.done=true;c.rc=rid;c.rt=now;moved++;names.push(c.text)}
-        else{S.cart.push({id:uid(),text:t,done:true,at:now+i,rc:rid,rt:now});names.push(t)}});
-      logAdd37({k:'rc',nm:names});
-      save();renderCart();closeModal();nwDone('rcp');
-      toast(names.length+'가지를 샀어요에 담았어요'+(moved?' · 목록에서 '+moved+'개 체크':''));
-    }
-    wire();document.getElementById('rcX').onclick=closeModal});
+  openModal('<div class="sheethead"><h2>'+(manual?'산 것 적기':'이렇게 읽었어요')+'</h2><button class="btn" id="rcX">닫기</button></div><div id="rcBody"></div>',function(){
+    box=document.getElementById('rcBody');draw();document.getElementById('rcX').onclick=closeModal});
 }
 function rcPasteSheet42(){
   openModal('<div class="sheethead"><h2>영수증 글 붙여넣기</h2><button class="btn" id="rcX">닫기</button></div><p class="help" style="margin:0">쿠팡·마트 앱의 주문 내역을 복사해서 붙여 주세요. 사진보다 정확해요.</p>'+
@@ -2547,7 +2751,7 @@ function rcPasteSheet42(){
     document.getElementById('rcClip').onclick=function(){var t='';try{if(window.AndroidExt&&window.AndroidExt.getClip)t=window.AndroidExt.getClip()||''}catch(e){}
       if(t){ta.value=t;return}
       try{navigator.clipboard.readText().then(function(v){if(v)ta.value=v;else toast('복사한 글이 없어요')},function(){toast('길게 눌러 붙여넣어 주세요')})}catch(e){toast('길게 눌러 붙여넣어 주세요')}};
-    document.getElementById('rcGo').onclick=function(){var it=parseRc42(ta.value);if(!it.length)return rcFail42('붙여넣은 글에서 산 것을 찾지 못했어요. 글을 다시 확인하거나 직접 적어 주세요.');rcReview42(it)}});
+    document.getElementById('rcGo').onclick=function(){var rr=RC43.build([ta.value],rcVocab43(),true);if(!rr.rows.length)return rcFail42('붙여넣은 글에서 산 것을 찾지 못했어요. 글을 다시 확인하거나 직접 적어 주세요.');closeModal();rcReview42(rr)}});
 }
 var rcWork42=null,rcBusy42=false;
 function rcBase42(){return (location.protocol==='http:'||location.protocol==='https:')?location.origin+'/ocr':WEB_URL+'/ocr'}
@@ -2556,25 +2760,53 @@ function rcCanvas42(file,max){return new Promise(function(ok,no){var u=URL.creat
   im.onload=function(){var k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
     var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c)};
   im.onerror=function(){URL.revokeObjectURL(u);no(new Error('img'))};im.src=u})}
+function rcMk43(w,h){var c=document.createElement('canvas');c.width=Math.max(1,w);c.height=Math.max(1,h);return c}
+function rcCrop43(c){ // 영수증(밝은 종이) 부분만 잘라 배경 무늬를 줄임
+  try{
+    var s=Math.min(1,400/Math.max(c.width,c.height)),w=Math.max(1,c.width*s|0),h=Math.max(1,c.height*s|0),t=rcMk43(w,h),g=t.getContext('2d');g.drawImage(c,0,0,w,h);
+    var d=g.getImageData(0,0,w,h).data,hist=new Array(256).fill(0),i;
+    function lum(i){return 0.3*d[i]+0.59*d[i+1]+0.11*d[i+2]}
+    for(i=0;i<d.length;i+=4)hist[lum(i)|0]++;
+    var acc=0,th=255;for(;th>0;th--){acc+=hist[th];if(acc>w*h*0.18)break}th=Math.max(th-35,120);
+    var col=new Array(w).fill(0),row=new Array(h).fill(0),x,y;
+    for(y=0;y<h;y++)for(x=0;x<w;x++){if(lum((y*w+x)*4)>th){col[x]++;row[y]++}}
+    var x0=0,x1=w-1,y0=0,y1=h-1;
+    while(x0<w&&col[x0]<h*0.35)x0++;while(x1>0&&col[x1]<h*0.35)x1--;while(y0<h&&row[y0]<w*0.2)y0++;while(y1>0&&row[y1]<w*0.2)y1--;
+    if(x1-x0<w*0.2||y1-y0<h*0.2)return c;
+    var m=6;x0=Math.max(0,x0-m);y0=Math.max(0,y0-m);x1=Math.min(w-1,x1+m);y1=Math.min(h-1,y1+m);
+    var o=rcMk43(((x1-x0)/s)|0,((y1-y0)/s)|0);o.getContext('2d').drawImage(c,x0/s,y0/s,o.width,o.height,0,0,o.width,o.height);return o
+  }catch(e){return c}}
+function rcScale43(c,wid){var k=wid/c.width,o=rcMk43(wid,Math.round(c.height*k)),g=o.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(c,0,0,o.width,o.height);return o}
+function rcGray43(c){ // 흑백으로 바꾸고 대비를 늘림 (두 번째 읽기용)
+  var g=c.getContext('2d'),id=g.getImageData(0,0,c.width,c.height),d=id.data,n=c.width*c.height,L=new Uint8Array(n),hist=new Array(256).fill(0),i;
+  for(i=0;i<n;i++){L[i]=0.3*d[i*4]+0.59*d[i*4+1]+0.11*d[i*4+2];hist[L[i]]++}
+  var a=0,lo=0,hi=255;for(;lo<255;lo++){a+=hist[lo];if(a>n*0.02)break}a=0;for(;hi>0;hi--){a+=hist[hi];if(a>n*0.25)break}
+  for(i=0;i<n;i++){var v=(L[i]-lo)*255/Math.max(1,hi-lo);v=v<0?0:v>255?255:v;d[i*4]=d[i*4+1]=d[i*4+2]=v;d[i*4+3]=255}
+  g.putImageData(id,0,0);return c}
 function rcPhoto42(file){
   if(rcBusy42)return;rcBusy42=true;var cancelled=false;
   openModal('<div class="sheethead"><h2>영수증 읽는 중이에요</h2></div><div class="spin42"></div><p class="help" id="rcSt" style="text-align:center;margin:0">사진을 준비하고 있어요…</p><p class="help" style="text-align:center;margin:0">처음 한 번은 글자 읽기 도구(약 6MB)를 내려받아요. 와이파이가 편해요. 사진은 이 폰 안에서만 읽고 저장하지 않아요.</p><div class="btnrow"><button class="btn" id="rcX">취소</button></div>',function(){document.getElementById('rcX').onclick=function(){cancelled=true;rcBusy42=false;try{rcWork42&&rcWork42.terminate()}catch(e){}rcWork42=null;closeModal()}});
   var st=function(t){var e=document.getElementById('rcSt');if(e)e.textContent=t};
-  var b=rcBase42(),w=null;
-  rcCanvas42(file,2000).then(function(c){
-    st('읽기 도구를 준비하고 있어요…');
+  var b=rcBase42(),w=null,texts=[],base=null;
+  function rec(c,label){return Promise.race([w.recognize(c),new Promise(function(_,no){setTimeout(function(){no(new Error('timeout'))},150000)})]).then(function(r){return String((r&&r.data&&r.data.text)||'')})}
+  function done(){try{w&&w.terminate()}catch(e){}rcWork42=null;rcBusy42=false}
+  rcCanvas42(file,3000).then(function(c){
+    base=c;st('읽기 도구를 준비하고 있어요…');
     return (window.Tesseract?Promise.resolve():rcScript42(b+'/tesseract.min.js')).then(function(){
       return Tesseract.createWorker('kor',1,{workerPath:b+'/worker.min.js',corePath:b+'/core',langPath:b+'/lang',logger:function(m){if(m&&m.status==='recognizing text')st('글자를 읽고 있어요… '+Math.round((m.progress||0)*100)+'%');else if(m&&/loading/.test(m.status||''))st('읽기 도구를 내려받고 있어요…')}})
     }).then(function(wk){w=wk;rcWork42=wk;
-      return Promise.race([wk.recognize(c),new Promise(function(_,no){setTimeout(function(){no(new Error('timeout'))},150000)})])})
+      return rec(rcScale43(rcCrop43(base),1000))})
+  }).then(function(t1){
+    texts.push(t1);var r=RC43.build(texts,rcVocab43());
+    if(r.rows.length&&r.sumOk)return r;
+    if(cancelled)return r;
+    st('숫자를 한 번 더 확인하고 있어요…');
+    return rec(rcGray43(rcScale43(rcCrop43(base),1200))).then(function(t2){texts.push(t2);var r2=RC43.build(texts,rcVocab43());return r2.rows.length?r2:r},function(){return r})
   }).then(function(r){
-    try{w&&w.terminate()}catch(e){}rcWork42=null;rcBusy42=false;if(cancelled)return;
-    var it=parseRc42(r&&r.data&&r.data.text);
-    closeModal();
-    if(it.length)rcReview42(it);else rcFail42();
+    done();if(cancelled)return;closeModal();
+    if(r&&r.rows.length)rcReview42(r);else rcFail42();
   }).catch(function(e){
-    try{w&&w.terminate()}catch(_){}rcWork42=null;rcBusy42=false;if(cancelled)return;
-    closeModal();
+    done();if(cancelled)return;closeModal();
     rcFail42(navigator.onLine===false?'인터넷이 연결돼야 처음 한 번 읽기 도구를 내려받을 수 있어요. 연결한 뒤 다시 해 보세요. 지금은 글 붙여넣기나 직접 적기를 쓰실 수 있어요.':'');
   });
 }
