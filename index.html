@@ -492,6 +492,7 @@ header.top .rc37.dot i{display:block}
 .rcl42 .li.yel{background:#FFE0BC}
 .rcl42 input.am{width:92px;flex:none;text-align:right;border-color:var(--line);background:var(--bg)}.rcl42 input.nm{border-color:var(--line);background:var(--bg)}
 .rcbox42 small{font-size:11.5px;opacity:.85}
+.rcact42{position:sticky;bottom:0;z-index:2;background:var(--surface);padding:8px 0 calc(2px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 8px -8px rgba(80,60,20,.25)}
 .rcbox42{border-radius:12px;padding:9px 11px;font-size:13px;background:var(--sunk);color:var(--muted)}
 .rcbox42.ok{background:var(--accent-soft);color:var(--accent-ink)}
 .rcbox42.warn{background:var(--warn-soft);color:var(--warn)}
@@ -2705,7 +2706,7 @@ function rcReview42(info,manual){
   function noteOf(r){
     if(r.ed)return '';
     if(r.flag==='fix')return '읽은 값 '+rcNum43(r.obsA)+' → '+rcNum43(r.a)+'(으)로 바로잡았어요';
-    if(r.flag==='guess')return '금액이 안 읽혀서 합계 차이로 추정했어요';
+    if(r.flag==='guess')return '합계에 맞춰 채웠어요';
     if(r.flag==='bad'||r.flag==='miss')return '금액이 안 맞아 보여요. 확인해 주세요';
     return ''}
   function listHtml(){
@@ -2714,7 +2715,7 @@ function rcReview42(info,manual){
         (edit?'<input type="text" class="nm" maxlength="40" value="'+esc(r.t)+'" aria-label="산 것 이름">'+(hasAmt?'<input type="text" class="am" inputmode="numeric" value="'+(r.a==null?'':rcNum43(r.a))+'" aria-label="금액" placeholder="금액">':'')
           :'<span class="nmv">'+esc(r.t||'(비어 있음)')+(y&&nt?'<small>'+esc(nt)+'</small>':'')+'</span>'+(hasAmt?'<span class="amv">'+(r.a==null?'—':rcNum43(r.a))+'</span>':''))+
         (edit?'':'<span class="tg"'+(r.cid?'':' hidden')+'>샀어요로</span>')+'</div>'}).join('')+'</div>'}
-  function btnHtml(){return '<div class="btnrow" style="justify-content:stretch">'+(manual?'':'<button class="btn" id="rcEd" style="flex:1">'+(edit?'완료':'✏️ 고치기')+'</button>')+'<button class="btn" id="rcMore" style="flex:1">+ 줄 더하기</button></div><button class="rcbig42" id="rcOk">이대로 붙이기</button>'}
+  function btnHtml(){return '<div class="rcact42"><div class="btnrow" style="justify-content:stretch">'+(manual?'':'<button class="btn" id="rcEd" style="flex:1">'+(edit?'완료':'✏️ 고치기')+'</button>')+'<button class="btn" id="rcMore" style="flex:1">+ 줄 더하기</button></div><button class="rcbig42" id="rcOk" style="margin-top:8px">이대로 붙이기</button></div>'}
   function refresh(){var s=box.querySelector('#rcStat');if(s)s.innerHTML=statHtml()}
   function draw(){box.innerHTML='<div id="rcStat">'+statHtml()+'</div>'+listHtml()+btnHtml();wire()}
   function wire(){
@@ -2747,7 +2748,7 @@ function rcPasteSheet42(){
   openModal('<div class="sheethead"><h2>영수증 글 붙여넣기</h2><button class="btn" id="rcX">닫기</button></div><p class="help" style="margin:0">쿠팡·마트 앱의 주문 내역을 복사해서 붙여 주세요. 사진보다 정확해요.</p>'+
     '<textarea class="rcpaste42" id="rcTxt" placeholder="여기에 길게 눌러 붙여넣기"></textarea><button class="btn" id="rcClip">📋 복사한 글 가져오기</button>'+
     '<div class="rcbox42">🔒 받는 분 이름·주소·전화번호 줄은 읽지도 저장하지도 않아요. 붙인 글도 저장하지 않고, 산 것 이름만 남겨요.</div>'+
-    '<div class="btnrow" style="justify-content:stretch"><button class="btn" id="rcClr" style="flex:1">지우기</button><button class="rcbig42" id="rcGo" style="flex:2">품목 읽기</button></div>',function(){
+    '<div class="rcact42"><div class="btnrow" style="justify-content:stretch"><button class="btn" id="rcClr" style="flex:1">지우기</button><button class="rcbig42" id="rcGo" style="flex:2">품목 읽기</button></div></div>',function(){
     var ta=document.getElementById('rcTxt');
     document.getElementById('rcX').onclick=closeModal;
     document.getElementById('rcClr').onclick=function(){ta.value='';ta.focus()};
