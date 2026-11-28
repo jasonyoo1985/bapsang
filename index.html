@@ -759,6 +759,7 @@ html[data-nwoff~="buy"] .nw-buy{display:none}
 
 <script>
 (function(){
+var rcMem47={};
 const KEY='weeklyDinner.v2', OLDKEY='weeklyDinner.v1';
 // 가족 공유 저장소 (APK 빌드 때 채움). url: Firebase Realtime Database 주소, family: 20자 이상 가족 코드
 const SYNC_DEFAULT={url:'https://kim-yoo-happy-house-default-rtdb.asia-southeast1.firebasedatabase.app',family:''};
@@ -870,8 +871,54 @@ function migrateV1(o){
   });
   return st;
 }
+/* 4.9: 모양이 이상한 장 본 기록(날짜·품목이 없거나 형식이 다른 것)은 지우지 않고 고쳐 읽고, 쓸 수 없는 것만 건너뜀 */
+function fixBuys49(arr){
+  if(!Array.isArray(arr))return [];
+  const okD=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(new Date(s+'T00:00:00').getTime())&&new Date(s+'T00:00:00').toISOString().slice(0,4)!=='NaN';
+  const dOf=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+  const out=new Map();
+  arr.forEach((b,i)=>{
+    if(!b||typeof b!=='object'||Array.isArray(b))return;
+    const at=Number.isFinite(+b.at)&&+b.at>0?+b.at:0;
+    const r=Object.assign({},b);
+    r.at=at;
+    r.id=(typeof b.id==='string'||typeof b.id==='number')&&String(b.id)?String(b.id):'fx'+at+'-'+i;
+    r.d=okD(b.d)?b.d:(at?dOf(at):dOf(Date.now()));
+    let its=b.items;
+    if(its&&!Array.isArray(its)&&typeof its==='object')its=Object.values(its);
+    if(typeof its==='string')its=its.split(/[,，\n]/);
+    if(!Array.isArray(its))its=[];
+    const seen=new Set(),ni=[];
+    its.forEach(x=>{
+      let n=null;
+      if(typeof x==='string'||typeof x==='number')n=String(x);
+      else if(x&&typeof x==='object'&&(typeof x.n==='string'||typeof x.n==='number'))n=String(x.n);
+      else if(x&&typeof x==='object'&&typeof x.text==='string')n=x.text;
+      n=n==null?'':n.trim().slice(0,60);
+      if(n&&!seen.has(n)&&ni.length<300){seen.add(n);ni.push({n})}});
+    if(!ni.length)return;
+    r.items=ni;
+    if(r.by!=null&&typeof r.by!=='string')delete r.by;
+    if(typeof r.src!=='string')delete r.src;
+    if(r.rp!=null&&typeof r.rp!=='string'){delete r.rp;delete r.rs}
+    if(!Number.isFinite(+r.u))delete r.u;
+    const ex=out.get(r.id);
+    if(!ex||(+r.u||0)>(+ex.u||0)||((+r.u||0)===(+ex.u||0)&&r.items.length>ex.items.length))out.set(r.id,r);
+  });
+  let res=[...out.values()];
+  if(res.length>3000)res=res.sort((x,y)=>x.d<y.d?1:-1).slice(0,3000);
+  return res;
+}
+function fixCart49(arr){
+  if(!Array.isArray(arr))return [];
+  const seen=new Set();
+  return arr.filter(x=>x&&typeof x==='object'&&!Array.isArray(x)&&(typeof x.text==='string'||typeof x.text==='number')).map((x,i)=>{
+    const r=Object.assign({},x);r.text=String(x.text).slice(0,60);
+    r.id=(typeof x.id==='string'||typeof x.id==='number')&&String(x.id)?String(x.id):'cx'+(+x.at||0)+'-'+i;
+    r.done=!!x.done;if(!Number.isFinite(+r.at))r.at=0;return r}).filter(x=>{if(seen.has(x.id))return false;seen.add(x.id);return true});
+}
 function normalize(st){
-  st.dishes=st.dishes||[];st.stock=st.stock||[];st.days=st.days||{};st.shop=st.shop||[];st.settings=Object.assign({saving:20000},st.settings||{});st.del=st.del||{};st.cart=st.cart||[];st.buys=Array.isArray(st.buys)?st.buys:[];st.wish=st.wish||[];st.members=st.members||{};st.log=Array.isArray(st.log)?st.log:[];
+  st.dishes=st.dishes||[];st.stock=st.stock||[];st.days=st.days||{};st.shop=st.shop||[];st.settings=Object.assign({saving:20000},st.settings||{});st.del=st.del||{};st.cart=fixCart49(st.cart);st.buys=fixBuys49(st.buys);st.wish=st.wish||[];st.members=st.members||{};st.log=Array.isArray(st.log)?st.log:[];
   Object.keys(st.days).forEach(k=>{st.days[k]=Object.assign(blankDay(),st.days[k])});
   return st;
 }
@@ -1102,7 +1149,12 @@ function markDay(k,what){
 
 /* ---------- 렌더 ---------- */
 let weekStart=mondayOf(todayISO());
-function render(){renderToday();renderLook();renderPlan();renderShop();renderMenu();renderMore();renderCal();renderCart();renderOwn34();}
+/* 4.9: 화면 한 부분이 오류가 나도 다른 부분은 계속 그려요. 오류는 설정의 ‘앱 버전’ 아래 진단에 남아요 */
+let errLog49=[];
+function errR49(where,e){try{const m=String((e&&e.message)||e).slice(0,80);errLog49.unshift(where+': '+m);errLog49=errLog49.slice(0,5);try{localStorage.setItem('wd.err',JSON.stringify(errLog49))}catch(_){}
+  const d=document.getElementById('errDiag49');if(d)errDiag49()}catch(_){}}
+function sr49(name,f){try{f()}catch(e){errR49(name,e)}}
+function render(){sr49('오늘',renderToday);sr49('돌아보기',renderLook);sr49('계획',renderPlan);sr49('장보기',renderShop);sr49('메뉴',renderMenu);sr49('설정',renderMore);sr49('달력',renderCal);sr49('장보기목록',renderCart);sr49('담당',renderOwn34);}
 
 function mainChips(day,withX,k){
   return day.mains.map((m,i)=>{const d=dish(m.dishId);if(!d)return '';
@@ -1713,20 +1765,21 @@ function undoRecs(buys,res){
 /* 자주 산 것: 최근 180일 기록에서 2번 이상 나온 이름(많이 산 순, 같으면 최근 순). 지금 사야 할 것에 있는 건 뺀다 */
 function freq(buys,todo,today,limit){
   var from=dayOf(new Date(today.slice(0,4),today.slice(5,7)-1,+today.slice(8,10)-180).getTime()),m={};
-  buys.forEach(function(b){if(b.d<from||b.d>today)return;b.items.forEach(function(i){var k=norm(i.n);if(!k)return;var e=m[k]||(m[k]={n:i.n,c:0,last:''});e.c++;if(b.d>=e.last){e.last=b.d;e.n=i.n}})});
+  buys.forEach(function(b){if(!okb(b)||b.d<from||b.d>today)return;b.items.forEach(function(i){var k=norm(i.n);if(!k)return;var e=m[k]||(m[k]={n:i.n,c:0,last:''});e.c++;if(b.d>=e.last){e.last=b.d;e.n=i.n}})});
   var skip={};todo.forEach(function(t){skip[norm(t)]=1});
   return Object.keys(m).map(function(k){return m[k]}).filter(function(e){return e.c>=2&&!skip[norm(e.n)]}).sort(function(a,b){return b.c-a.c||(a.last<b.last?1:-1)}).slice(0,limit||8)}
 /* 최근 산 기록(days일 안): 기록과 아직 정리 안 한 샀어요에서 찾는다 */
 function recent(name,buys,cart,today,days){
   var from=dayOf(new Date(today.slice(0,4),today.slice(5,7)-1,+today.slice(8,10)-days).getTime()),best=null;
-  buys.forEach(function(b){if(b.d<from||b.d>today)return;if(b.items.some(function(i){return same(i.n,name)})&&(!best||b.d>=best.d))best={d:b.d,by:b.by}});
+  buys.forEach(function(b){if(!okb(b)||b.d<from||b.d>today)return;if(b.items.some(function(i){return same(i.n,name)})&&(!best||b.d>=best.d))best={d:b.d,by:b.by}});
   cart.forEach(function(x){if(!x.done)return;var d=dayOf(x.rt||x.at||0);if(d<from||d>today)return;if(same(x.text,name)&&(!best||d>=best.d))best={d:d,by:x.by}});
   return best}
 /* 24개월(기본) 지난 기록 골라내기 */
 function expired(buys,today,months){
   var y=+today.slice(0,4),m=+today.slice(5,7)-months,d=today.slice(8,10);while(m<=0){m+=12;y--}
-  var cut=y+'-'+pad(m)+'-01';return buys.filter(function(b){return b.d<cut})}
-function monthMap(buys,ym){var o={};buys.forEach(function(b){if(b.d.slice(0,7)===ym){(o[b.d]=o[b.d]||[]).push(b)}});return o}
+  var cut=y+'-'+pad(m)+'-01';return buys.filter(function(b){return okb(b)&&b.d<cut})}
+function okb(b){return !!(b&&typeof b.d==='string'&&Array.isArray(b.items))}
+function monthMap(buys,ym){var o={};buys.forEach(function(b){if(okb(b)&&b.d.slice(0,7)===ym){(o[b.d]=o[b.d]||[]).push(b)}});return o}
 return {dayOf:dayOf,norm:norm,same:same,group:group,addRecs:addRecs,undoRecs:undoRecs,freq:freq,recent:recent,expired:expired,monthMap:monthMap}
 })();
 
@@ -1737,7 +1790,7 @@ function renderCart(){
   const todo=S.cart.filter(x=>!x.done),done=S.cart.filter(x=>x.done);
   $('#cartTodo').innerHTML=todo.map(row).join('')||'<div class="empty">사야 할 것이 없어요</div>';
   $('#cartDone').innerHTML=done.map(row).join('')||'<div class="empty">아직 산 것이 없어요</div>';
-  $('#cartDoneHead').textContent=`샀어요 (${done.length})`;$('#cartClear').hidden=!done.length;$('#tidy46').hidden=!done.length;freqRender46();renderRc42();
+  $('#cartDoneHead').textContent=`샀어요 (${done.length})`;$('#cartClear').hidden=!done.length;$('#tidy46').hidden=!done.length;sr49('자주산것',freqRender46);sr49('장본기록',renderRc42);
 }
 const addMonths=(ym,n)=>{const [y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
 let calMonth=todayISO().slice(0,7);
@@ -1978,10 +2031,18 @@ if(window.ResizeObserver){const ro=new ResizeObserver(es=>es.forEach(e=>fitDev(e
    ‘나중에’는 1시간만 쉬고 다시 물어봄. 실패하면 조용히 넘어감 */
 let updLater=0,updShown=false;
 const newer=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false};
-function checkUpdate(){
-  if(!window.AndroidShare)return;if(updShown&&!$('#upGo')&&!$('#modalRoot').innerHTML)updShown=false;
-  fetch(WEB_URL+'/version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(v=>{
-    if(!v||!v.latest||!newer(v.latest,APP_VERSION))return;
+function updNote49(code,msg){try{localStorage.setItem('wd.upd',JSON.stringify({t:Date.now(),c:code,m:String(msg||'').slice(0,60)}))}catch(e){}updDiag49()}
+function updDiag49(){const el=document.getElementById('updDiag49');if(!el)return;let u=null;try{u=JSON.parse(localStorage.getItem('wd.upd')||'null')}catch(e){}
+  const tm=u?new Date(u.t):null,hm=tm?`${tm.getMonth()+1}/${tm.getDate()} ${String(tm.getHours()).padStart(2,'0')}:${String(tm.getMinutes()).padStart(2,'0')}`:'';
+  const txt=!u?'아직 확인하지 않았어요':u.c==='latest'?`${hm} · 최신 버전이에요`:u.c==='new'?`${hm} · 새 버전 ${esc(u.m)}이 있어요`:u.c==='snooze'?`${hm} · 새 버전 ${esc(u.m)} (‘나중에’ 쉬는 중)`:u.c==='noapp'?`${hm} · 앱에서만 확인해요`:`${hm} · 확인하지 못했어요 (${esc(u.m)})`;
+  el.innerHTML=`<span>새 버전 확인</span><b style="font-weight:600;font-size:13px;text-align:right">${txt}</b>`}
+function errDiag49(){const el=document.getElementById('errDiag49');if(!el)return;let l=[];try{l=JSON.parse(localStorage.getItem('wd.err')||'[]')}catch(e){}el.innerHTML=l.length?`<summary>화면 오류 기록 ${l.length}건</summary><div class="verhist" style="font-size:12px">${l.map(x=>`<div>${esc(x)}</div>`).join('')}</div>`:''}
+function checkUpdate(manual){
+  if(!window.AndroidShare){updNote49('noapp','');return}if(manual){updShown=false;updLater=0}if(updShown&&!$('#upGo')&&!$('#modalRoot').innerHTML)updShown=false;
+  fetch(WEB_URL+'/version.json?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('서버 응답 '+r.status);return r.json()}).then(v=>{
+    if(!v||!v.latest)throw new Error('내용이 비어 있어요');
+    if(!newer(v.latest,APP_VERSION)){updNote49('latest',v.latest);if(manual)toast('지금 최신 버전이에요');return}
+    updNote49(updShown||Date.now()<updLater?'snooze':'new',v.latest);
     if(updShown||Date.now()<updLater)return;updShown=true;
     const show=()=>openModal(`<img class="ob-ch" src="${IMG.family}" alt="" style="width:min(160px,50%)"><h2>새 버전 ${esc(v.latest)}이 나왔어요</h2>
       <p class="help" style="margin:0">지금 쓰는 버전은 ${esc(APP_VERSION)}이에요. 업데이트할까요?</p>
@@ -1992,7 +2053,7 @@ function checkUpdate(){
       });
     // 다른 창(첫 화면·안내)이 떠 있으면 닫힌 뒤에 보여 줌
     const wait=()=>{if($('#modalRoot').innerHTML)return setTimeout(wait,1500);show()};wait();
-  }).catch(()=>{});
+  }).catch(e=>{updNote49('fail',(e&&e.message)||'인터넷 연결')});
 }
 document.addEventListener('click',e=>{const a=e.target.closest('.dev-card');if(!a)return;if(window.AndroidShare&&window.AndroidShare.openUrl){e.preventDefault();try{window.AndroidShare.openUrl(a.href)}catch(_){}}});
 const PLAY_URL='https://play.google.com/store/apps/details?id=com.yoo.familydinner';
@@ -2211,7 +2272,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='famno'){try{localStorage.setItem('wd.famCard','1')}catch(_){}render()}});
 document.addEventListener('visibilitychange',()=>{notiSeen();if(!document.hidden)setTimeout(checkClip,700)});
 setTimeout(checkClip,900);setTimeout(maybeRate,6000);setInterval(maybeRate,30000);setTimeout(()=>{notiSync();notiSeen()},1500);
-const APP_VERSION='4.8';
+const APP_VERSION='4.9';
 /* ---------- 4.8 자동 보관본: 업데이트 직전·하루 한 번·메뉴 지우기 전·가족 변경 반영 전의 상태를 폰에 3~6개 남김 ---------- */
 function snaps48(){try{const v=JSON.parse(localStorage.getItem('wd.snaps')||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
 function snapNow(why,gapMs,kind){
@@ -2499,8 +2560,9 @@ function cmtSheet(k){
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cmt]');if(b)cmtSheet(b.dataset.cmt)});
 /* 업데이트 후 처음 한 번: 새로 바뀐 점 */
 function pulse34(sel){setTimeout(()=>{const el=document.querySelector(`.tab.active ${sel}`);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('pulse34');setTimeout(()=>el.classList.remove('pulse34'),4500)}},350)}
-function whatsNew34(seen){const only47=seen==='4.7',only46=seen==='4.6',only45=seen==='4.5',only42=seen==='4.0'||seen==='4.1',only44=seen==='4.4',only40=seen==='3.7'||seen==='3.8'||seen==='3.9',only37=seen==='3.6',only36=seen==='3.5',only35=seen==='3.4';
+function whatsNew34(seen){const only48=seen==='4.8',only47=seen==='4.7',only46=seen==='4.6',only45=seen==='4.5',only42=seen==='4.0'||seen==='4.1',only44=seen==='4.4',only40=seen==='3.7'||seen==='3.8'||seen==='3.9',only37=seen==='3.6',only36=seen==='3.5',only35=seen==='3.4';
   const it=(ic,t,d,go,nw)=>`<li><span class="ic">${ic}</span><div><b>${t}${nw?` <span class="nw" style="margin:0">새로워요</span>`:''}</b><small>${d}</small>${go?`<button class="btn small" data-wngo="${go}">지금 해보기</button>`:''}</div></li>`;
+  const n49=it('🛠','장보기 달력·새 버전 알림 바로잡기','4.7·4.8에서 장 본 기록이 있는 폰은 앱을 켤 때 화면이 중간에 멈춰 장보기 달력이 비고 새 버전 알림이 안 떴어요. 고쳤고, 이상한 기록이 있어도 앱이 멈추지 않아요. 설정 맨 아래 ‘앱 버전’에서 새 버전 확인 결과를 볼 수 있어요.','',1);
   const n48=it('🛟','메뉴가 사라지지 않게 · 오늘 밥상 카드 통일','업데이트 직전과 하루 한 번, 메뉴를 지우기 전에 이 폰이 알아서 상태를 남겨 둬요. 설정의 [자동 보관본]에서 그때로 되돌릴 수 있어요. 가족이 보낸 변경으로 메뉴가 줄면 알려 주고 바로 되돌릴 수 있어요. 오늘 밥상은 아침·점심·저녁을 같은 카드로 보여 주고, ‘메뉴가 바뀌었어요’ 안내는 작은 한 줄로 줄였어요.','',1);
   const n47=it('🧾','영수증 더 잘 읽기 · 기록 고치기 · 사진 보기','영수증의 품목 부분만 읽어요(위 가게 안내·아래 카드 글은 건너뛰어요). 고칠 줄은 연필을 누르면 키보드 위에 바로 보여요. 장 본 기록에서도 산 것을 고치고 더하고 뺄 수 있고, 영수증 사진은 품목과 합계 부분만 작게 줄여 기록 안에서 크게 볼 수 있어요. (선택)','buy46',1);
   const n42=it('🧾','장 본 영수증 붙이기','장보기 탭 맨 아래에서 영수증을 [📷 찍기]·사진 고르기로 올리거나 쿠팡 같은 글을 붙여넣으면, 산 것을 읽어서 ‘샀어요’로 체크해 줘요. 읽은 걸 확인하고 [이대로 붙이기]만 누르면 끝이에요. 사진은 폰 안에서만 읽고, 남기는 건 원할 때만이에요. (선택)','rcp42',1);
@@ -2514,7 +2576,7 @@ function whatsNew34(seen){const only47=seen==='4.7',only46=seen==='4.6',only45=s
     it('📌','시작 화면 고르기','‘계획’ 화면 위의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)','pin')+
     it('👩‍🍳','식단 담당','식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정해요. 다른 가족은 보기만 하고 ‘못 먹어요’는 그대로 눌러요. (선택)','own')+
     it('🔑','가족 코드 참여 안내','코드가 틀렸는지, 연결이 안 되는지 나눠서 알려 줘요.','');
-  openModal(`<div class="wn"><h2>${APP_VERSION} 새로 바뀐 점</h2><p class="help" style="margin-bottom:0">쓰던 대로 쓰셔도 돼요. 필요할 때 골라 쓰는 기능이에요.</p><ul>`+(only47?n48:n48+(only46?n47:n47+(only45?n46:n46+(only44?n45:n42+(only42?'':n40)+(only42||only40?'':n37+(only37?'':n36+(only36?'':n35+(only35?'':n34))))))))+`</ul><div class="btnrow"><button class="btn primary" id="wnClose">닫기</button></div></div>`,()=>{
+  openModal(`<div class="wn"><h2>${APP_VERSION} 새로 바뀐 점</h2><p class="help" style="margin-bottom:0">쓰던 대로 쓰셔도 돼요. 필요할 때 골라 쓰는 기능이에요.</p><ul>`+(only48?n49:n49+(only47?n48:n48+(only46?n47:n47+(only45?n46:n46+(only44?n45:n42+(only42?'':n40)+(only42||only40?'':n37+(only37?'':n36+(only36?'':n35+(only35?'':n34)))))))))+`</ul><div class="btnrow"><button class="btn primary" id="wnClose">닫기</button></div></div>`,()=>{
     $('#wnClose').onclick=closeModal;
     document.querySelectorAll('[data-wngo]').forEach(b=>b.onclick=()=>{const g=b.dataset.wngo;closeModal();
       if(g==='rcp42'){goTab('cart');pulse34('.rcp42')}
@@ -2543,10 +2605,11 @@ function start34(){
 }
 document.addEventListener('toggle',e=>{const d=e.target;if(d.matches&&d.matches('details.sgrp')&&d.open&&/나와 우리 집/.test(d.textContent.slice(0,40)))nwDone('set')},true);
 
-const HISTORY=[["4.8",["메뉴가 사라지지 않게 지켜요. 업데이트 직전·하루 한 번·메뉴를 지우기 전에 이 폰이 상태를 자동으로 남겨 두고, 설정의 [자동 보관본]에서 되돌릴 수 있어요.","저장된 내용을 읽지 못하면 예시 메뉴로 덮지 않고 자동 보관본에서 먼저 되살려요. 저장 공간이 모자라면 알려 줘요.","가족이 보낸 변경으로 메뉴가 없어지면 알려 주고 [되돌리기]를 눌러 바로 되살릴 수 있어요.","오늘 밥상에서 아침·점심·저녁을 같은 카드로 보여 주고, ‘오늘 메뉴가 바뀌었어요’ 안내는 작은 한 줄로 줄였어요."]],["4.7",["영수증 읽기가 좋아졌어요. 품목 부분만 골라 읽고, 위쪽 가게 안내와 아래쪽 카드·포인트 글, 할인·행사 줄은 품목에서 빼요. 합계 검산에는 할인까지 계산해요.","읽은 줄을 고칠 때 키보드에 가려지지 않아요. 연필을 누르면 그 줄이 키보드 위에 바로 보여요.","장 본 기록에서 산 것의 이름을 고치고, 한 가지 더하고, 뺄 수 있어요. 뺀 것은 [되돌리기]가 떠요.","영수증 사진은 품목과 합계 부분만 잘라 작게 줄여 보관해요. 기록 안에 작은 사진이 보이고 [크게 보기]로 두 손가락으로 키워 볼 수 있어요. 사진 보관은 기본으로 켜져 있고 올릴 때 끌 수 있어요."]],["4.6",["[비우기]가 [정리하기]로 바뀌었어요. 산 것은 지워지지 않고 ‘장 본 날’ 기록으로 남아요.","장보기 탭 맨 아래 장보기 달력에서 날짜별로 장 본 것을 다시 볼 수 있어요. 눌러서 [사야 할 것에 담기]도 돼요.","계획 달력에 장 본 날 갈색 점이 생기고, 그날을 열면 장 본 것 줄이 나와요. 식단과는 따로 두어요.","영수증을 올릴 때 ‘장 본 날’을 고를 수 있어요. 며칠 뒤에 올려도 돼요. 기록에서 날짜도 바꿀 수 있어요.","자주 산 것을 눌러 담고, 최근에 산 것을 적으면 알려 줘요. 금액은 저장하지 않고, 기록은 24개월 남아요.","영수증 사진 저장 크기를 줄이고 사용량 표시를 바로잡았어요."]],["4.5",["장 본 영수증을 [📷 찍기]로 바로 찍을 수 있어요.","[🖼️ 사진 고르기]를 누르면 안드로이드 사진 선택 화면이 바로 열려요.","영수증을 폰 안에서 훨씬 빨리 읽어요(구글 글자 읽기 사용, 사진은 폰 밖으로 보내지 않아요). 이 기능을 못 쓰는 폰은 예전 방식으로 읽어요.","읽은 결과에서 줄 옆 ✏️로 그 줄만 고치고, 합계 옆 ✏️로 영수증 합계도 고칠 수 있어요. [읽은 글자 보기]로 읽은 글을 확인해요.","원하면 영수증 사진(품목 부분만)을 가족과 함께 보관하고, 설정에서 저장 공간을 볼 수 있어요. (선택)"]],["4.4",["영수증 확인 창의 아래 버튼([이대로 붙이기] 등)이 창 맨 아래에 고정되어, 품목이 많아도 항상 보이고 눌려요. 합계에 맞춰 채운 줄은 ‘합계에 맞춰 채웠어요’라고 알려 줘요."]],["4.3",["장보기 탭 맨 아래에 [🧾 장 본 영수증]이 생겼어요. 영수증 사진을 고르거나 쿠팡 같은 글을 붙여넣으면 산 것을 읽어서, 사야 할 것에 있던 건 ‘샀어요’로 옮기고 없던 건 샀어요에 더해요. 읽은 금액을 영수증 합계와 맞춰 보고 잘못 읽은 숫자와 빠진 금액을 바로잡아 주황 줄로 알려 줘요. [✏️ 고치기]를 누르면 전체 목록이 수정 모드가 되어 고칠 줄의 이름·금액만 바로 고칠 수 있고, 한 번 고친 이름은 다음 영수증에서 자동으로 바로잡아요. 사진은 저장하지 않고, 금액은 검산에만 쓰며 저장하지 않아요. 가족에게는 산 것 이름만 보여요. (선택)"]],["4.1",["오늘 밥상 화면의 칸 사이 간격을 줄여서 한눈에 더 많이 보여요. 글자와 버튼 크기는 그대로예요."]],["4.0",["지난 날에도 ‘나 못 먹었어요’를 표시할 수 있어요. 달력에서 그날을 눌러 고치거나, 오늘 밥상의 어제 안내에서 바로 누르세요. 늦게 들어와 못 먹은 다음 날에도 고칠 수 있어요. (선택)"]],["3.9",["식단 담당을 아직 정하지 않았을 때도 식단 위쪽에 가로 초록 바로 보여요. ‘담당 가족 모두 · 누구나 고쳐요’라고 알려 주고, 오른쪽 [담당 정하기]로 바로 정할 수 있어요. (선택)"]],["3.8",["‘새로워요’ 표시가 업데이트 후 처음 연 뒤, 앱을 닫았다가 다시 열면 사라져요. 기능을 써 본 표시도 바로 사라지도록 고쳤어요."]],["3.7",["가족이 먹고 싶어요·식단·장보기를 바꾸면 ‘인찬엄마가 먹고 싶어요에서 ‘1등급한우’를 뺐어요’처럼 누가 무엇을 했는지 알려 줘요.","맨 위 [🕘 최근 변경]에서 지난 7일(최대 30개)의 변경을 볼 수 있고, 지운 것은 [되살리기]로 되돌려요. 가족이 모두 3.7로 업데이트해야 기록이 빠짐없이 남아요."]],["3.6",["식단 위쪽의 담당 표시를 한 줄로 줄이고 더 눈에 띄게 했어요. 담당이 아닌 폰은 ‘이 폰은 보기만’이라고 보여요.","가족이 오늘 메뉴를 바꾸면 오늘 저녁 메뉴 카드 위에 ‘오늘 메뉴가 바뀌었어요’ 띠로 알려 주고, 남긴 이유도 함께 보여요."]],["3.5",["식단을 바꾼 직후 [이유 남기기]가 잠깐 떠요. 한 줄 이유를 남기면 그 날짜 카드와 오늘 밥상에 ‘💬 엄마 · 외식으로 바꿨어요’로 가족에게 보여요. 가족이 함께 쓸 때만 나오는 선택 기능이에요."]],["3.4",["지운 메뉴는 아래에 잠깐 뜨는 [되돌리기]로 바로 복구할 수 있어요.","‘계획’ 탭의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)","식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정할 수 있어요. 담당이 아닌 가족은 식단 내용만 보기 전용이고, ‘못 먹어요’ 표시와 식단 공유는 그대로예요. 누구든 바꾸거나 풀 수 있어요. (선택)","가족 코드로 참여할 때 코드 문제인지 연결 문제인지 나눠서 알려 줘요.","업데이트 후 처음 열면 ‘새로 바뀐 점’이 한 번 떠요."]],["3.3",["주간 계획의 [식단 공유]에서 이번 주 식단을 예쁜 이미지로 만들어 카톡 등으로 보낼 수 있어요. 보내기 전에 미리 볼 수 있고, 글로 복사도 그대로 있어요.","처음 쓰는 분을 위해 비어 있는 주에는 자동 짜기·지난주 가져오기를 한 줄로 알려 줘요.","가족 식단표를 만든 뒤 아직 아무도 들어오지 않았다면 초대 글을 다시 보낼 수 있고, 가족이 합류하면 알려 줘요. 설정의 가족 공유에도 함께 보는 가족 수가 보여요."]],["3.2",["이름을 바꾸면 PC·폰에 남은 옛 이름도 함께 바뀌어, 가족 목록에 같은 사람이 두 번 보이지 않아요.","이미 두 번 보이는 이름은 설정에서 ‘나예요’를 눌러 합칠 수 있어요."]],["3.1",["아래 메뉴를 둥근 바와 그림 아이콘으로 바꿨어요. ‘메뉴·메모’는 ‘메뉴·레시피’로 이름을 바꿨어요.","메뉴 목록에 ▶영상·블로그 표시가 붙고, 위쪽 버튼으로 레시피가 있는 메뉴나 즐겨찾기만 모아 볼 수 있어요.","설정을 가족 공유 / 나와 우리 집 / 보관과 도움 세 묶음으로 정리했어요. 눌러서 열어 봐요."]],["3.0",["메뉴를 누르면 [레시피] 탭이 먼저 보이고, 그 옆에 [메모] 탭이 있어요."]],["2.9",["설정의 가족 공유에 [코드만 복사] 버튼을 넣었어요. 카톡 초대 글 없이 가족 코드만 복사해 문자·메모 등으로 알려 줄 수 있어요. 화면에는 전과 같이 코드 앞부분만 보여요.","메뉴를 누르면 [메모] [레시피] 탭이 생겼어요. 자주 보는 유튜브·블로그 주소를 메뉴당 3개까지 넣으면 ‘메뉴 이름 레시피 영상 ▶’ 카드로 보여요. 누르면 유튜브가 열리고 뒤로 가면 앱으로 돌아와요. 가족 모두에게 함께 보여요.","설정의 끼니 시간 버튼 12개를 ‘우리 집 밥 시간’ 선택 3개로 줄였어요. 기본은 아침 7시, 점심 12시, 저녁 7시이고 30분 단위로 골라요. 밥 시간이 가까울 때 ‘못 먹어요’를 누르면 따뜻하게 안내해요."]],["2.8",["오늘 밥상 카드를 칸으로 나눴어요. 오늘 저녁 메뉴, 저녁이 바뀌었을 때, 함께 먹는 가족이 서로 다른 색 칸으로 보여요.","반찬이 없는 날은 빈 밑반찬 줄을 숨겨요."]],["2.7",["계획 탭의 주간 계획·월간 달력·돌아보기를 아이콘이 있는 알약 버튼으로 바꿔 한눈에 보여요.","주간 계획 위쪽을 줄여 요일별 메뉴가 더 빨리 보여요. 요약은 한 줄로, '건강식으로 짜기'는 '가볍게 짜기'로 바꿨어요.","오늘 밥상·장보기·메뉴·설정 화면을 같은 디자인으로 다듬었어요. 메뉴·메모에 메뉴 찾기가 생겼어요."]],["2.6",["가족을 쉽게 초대하고 합류할 수 있어요. 가족 초대하기 한 번이면 초대 글이 만들어지고, 받은 가족은 글을 복사해 두고 앱을 열어 [참여하기]만 누르면 돼요.","이미 식단이 있는 폰도 가족 식단에 합칠 수 있어요.","가족이 바꾼 오늘 메뉴에 표시가 붙어요. 설정에서 폰 알림을 켜면(선택) 앱을 닫아도 바뀐 걸 알려 줘요.","앱 평가하기를 설정에 두었어요. 요약 이미지 아래에 앱 이름 한 줄이 들어가요."]],["2.5",["아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.","돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.","함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."]],["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
+const HISTORY=[["4.9",["앱을 켤 때 화면 그리기가 중간에 멈추는 문제를 고쳤어요. 장 본 기록이 있는 폰에서 장보기 달력이 비고, 새 버전 알림과 가족 실시간 연결이 시작되지 않던 문제예요.","이상한 모양의 장 본 기록(날짜·품목이 없거나 형식이 다른 것)은 지우지 않고 고쳐 읽어요. 화면 한 부분이 오류가 나도 다른 부분은 계속 보여요.","설정의 앱 버전 아래에 ‘새 버전 확인’ 결과(최신인지, 못 했다면 이유)와 [지금 확인] 버튼을 넣었어요."]],["4.8",["메뉴가 사라지지 않게 지켜요. 업데이트 직전·하루 한 번·메뉴를 지우기 전에 이 폰이 상태를 자동으로 남겨 두고, 설정의 [자동 보관본]에서 되돌릴 수 있어요.","저장된 내용을 읽지 못하면 예시 메뉴로 덮지 않고 자동 보관본에서 먼저 되살려요. 저장 공간이 모자라면 알려 줘요.","가족이 보낸 변경으로 메뉴가 없어지면 알려 주고 [되돌리기]를 눌러 바로 되살릴 수 있어요.","오늘 밥상에서 아침·점심·저녁을 같은 카드로 보여 주고, ‘오늘 메뉴가 바뀌었어요’ 안내는 작은 한 줄로 줄였어요."]],["4.7",["영수증 읽기가 좋아졌어요. 품목 부분만 골라 읽고, 위쪽 가게 안내와 아래쪽 카드·포인트 글, 할인·행사 줄은 품목에서 빼요. 합계 검산에는 할인까지 계산해요.","읽은 줄을 고칠 때 키보드에 가려지지 않아요. 연필을 누르면 그 줄이 키보드 위에 바로 보여요.","장 본 기록에서 산 것의 이름을 고치고, 한 가지 더하고, 뺄 수 있어요. 뺀 것은 [되돌리기]가 떠요.","영수증 사진은 품목과 합계 부분만 잘라 작게 줄여 보관해요. 기록 안에 작은 사진이 보이고 [크게 보기]로 두 손가락으로 키워 볼 수 있어요. 사진 보관은 기본으로 켜져 있고 올릴 때 끌 수 있어요."]],["4.6",["[비우기]가 [정리하기]로 바뀌었어요. 산 것은 지워지지 않고 ‘장 본 날’ 기록으로 남아요.","장보기 탭 맨 아래 장보기 달력에서 날짜별로 장 본 것을 다시 볼 수 있어요. 눌러서 [사야 할 것에 담기]도 돼요.","계획 달력에 장 본 날 갈색 점이 생기고, 그날을 열면 장 본 것 줄이 나와요. 식단과는 따로 두어요.","영수증을 올릴 때 ‘장 본 날’을 고를 수 있어요. 며칠 뒤에 올려도 돼요. 기록에서 날짜도 바꿀 수 있어요.","자주 산 것을 눌러 담고, 최근에 산 것을 적으면 알려 줘요. 금액은 저장하지 않고, 기록은 24개월 남아요.","영수증 사진 저장 크기를 줄이고 사용량 표시를 바로잡았어요."]],["4.5",["장 본 영수증을 [📷 찍기]로 바로 찍을 수 있어요.","[🖼️ 사진 고르기]를 누르면 안드로이드 사진 선택 화면이 바로 열려요.","영수증을 폰 안에서 훨씬 빨리 읽어요(구글 글자 읽기 사용, 사진은 폰 밖으로 보내지 않아요). 이 기능을 못 쓰는 폰은 예전 방식으로 읽어요.","읽은 결과에서 줄 옆 ✏️로 그 줄만 고치고, 합계 옆 ✏️로 영수증 합계도 고칠 수 있어요. [읽은 글자 보기]로 읽은 글을 확인해요.","원하면 영수증 사진(품목 부분만)을 가족과 함께 보관하고, 설정에서 저장 공간을 볼 수 있어요. (선택)"]],["4.4",["영수증 확인 창의 아래 버튼([이대로 붙이기] 등)이 창 맨 아래에 고정되어, 품목이 많아도 항상 보이고 눌려요. 합계에 맞춰 채운 줄은 ‘합계에 맞춰 채웠어요’라고 알려 줘요."]],["4.3",["장보기 탭 맨 아래에 [🧾 장 본 영수증]이 생겼어요. 영수증 사진을 고르거나 쿠팡 같은 글을 붙여넣으면 산 것을 읽어서, 사야 할 것에 있던 건 ‘샀어요’로 옮기고 없던 건 샀어요에 더해요. 읽은 금액을 영수증 합계와 맞춰 보고 잘못 읽은 숫자와 빠진 금액을 바로잡아 주황 줄로 알려 줘요. [✏️ 고치기]를 누르면 전체 목록이 수정 모드가 되어 고칠 줄의 이름·금액만 바로 고칠 수 있고, 한 번 고친 이름은 다음 영수증에서 자동으로 바로잡아요. 사진은 저장하지 않고, 금액은 검산에만 쓰며 저장하지 않아요. 가족에게는 산 것 이름만 보여요. (선택)"]],["4.1",["오늘 밥상 화면의 칸 사이 간격을 줄여서 한눈에 더 많이 보여요. 글자와 버튼 크기는 그대로예요."]],["4.0",["지난 날에도 ‘나 못 먹었어요’를 표시할 수 있어요. 달력에서 그날을 눌러 고치거나, 오늘 밥상의 어제 안내에서 바로 누르세요. 늦게 들어와 못 먹은 다음 날에도 고칠 수 있어요. (선택)"]],["3.9",["식단 담당을 아직 정하지 않았을 때도 식단 위쪽에 가로 초록 바로 보여요. ‘담당 가족 모두 · 누구나 고쳐요’라고 알려 주고, 오른쪽 [담당 정하기]로 바로 정할 수 있어요. (선택)"]],["3.8",["‘새로워요’ 표시가 업데이트 후 처음 연 뒤, 앱을 닫았다가 다시 열면 사라져요. 기능을 써 본 표시도 바로 사라지도록 고쳤어요."]],["3.7",["가족이 먹고 싶어요·식단·장보기를 바꾸면 ‘인찬엄마가 먹고 싶어요에서 ‘1등급한우’를 뺐어요’처럼 누가 무엇을 했는지 알려 줘요.","맨 위 [🕘 최근 변경]에서 지난 7일(최대 30개)의 변경을 볼 수 있고, 지운 것은 [되살리기]로 되돌려요. 가족이 모두 3.7로 업데이트해야 기록이 빠짐없이 남아요."]],["3.6",["식단 위쪽의 담당 표시를 한 줄로 줄이고 더 눈에 띄게 했어요. 담당이 아닌 폰은 ‘이 폰은 보기만’이라고 보여요.","가족이 오늘 메뉴를 바꾸면 오늘 저녁 메뉴 카드 위에 ‘오늘 메뉴가 바뀌었어요’ 띠로 알려 주고, 남긴 이유도 함께 보여요."]],["3.5",["식단을 바꾼 직후 [이유 남기기]가 잠깐 떠요. 한 줄 이유를 남기면 그 날짜 카드와 오늘 밥상에 ‘💬 엄마 · 외식으로 바꿨어요’로 가족에게 보여요. 가족이 함께 쓸 때만 나오는 선택 기능이에요."]],["3.4",["지운 메뉴는 아래에 잠깐 뜨는 [되돌리기]로 바로 복구할 수 있어요.","‘계획’ 탭의 [📌 시작 화면으로]를 누르면 앱을 열 때 주간 계획이나 월간 달력부터 보여요. (선택)","식단 화면 위의 ‘식단 담당’에서 식단을 정하는 사람을 정할 수 있어요. 담당이 아닌 가족은 식단 내용만 보기 전용이고, ‘못 먹어요’ 표시와 식단 공유는 그대로예요. 누구든 바꾸거나 풀 수 있어요. (선택)","가족 코드로 참여할 때 코드 문제인지 연결 문제인지 나눠서 알려 줘요.","업데이트 후 처음 열면 ‘새로 바뀐 점’이 한 번 떠요."]],["3.3",["주간 계획의 [식단 공유]에서 이번 주 식단을 예쁜 이미지로 만들어 카톡 등으로 보낼 수 있어요. 보내기 전에 미리 볼 수 있고, 글로 복사도 그대로 있어요.","처음 쓰는 분을 위해 비어 있는 주에는 자동 짜기·지난주 가져오기를 한 줄로 알려 줘요.","가족 식단표를 만든 뒤 아직 아무도 들어오지 않았다면 초대 글을 다시 보낼 수 있고, 가족이 합류하면 알려 줘요. 설정의 가족 공유에도 함께 보는 가족 수가 보여요."]],["3.2",["이름을 바꾸면 PC·폰에 남은 옛 이름도 함께 바뀌어, 가족 목록에 같은 사람이 두 번 보이지 않아요.","이미 두 번 보이는 이름은 설정에서 ‘나예요’를 눌러 합칠 수 있어요."]],["3.1",["아래 메뉴를 둥근 바와 그림 아이콘으로 바꿨어요. ‘메뉴·메모’는 ‘메뉴·레시피’로 이름을 바꿨어요.","메뉴 목록에 ▶영상·블로그 표시가 붙고, 위쪽 버튼으로 레시피가 있는 메뉴나 즐겨찾기만 모아 볼 수 있어요.","설정을 가족 공유 / 나와 우리 집 / 보관과 도움 세 묶음으로 정리했어요. 눌러서 열어 봐요."]],["3.0",["메뉴를 누르면 [레시피] 탭이 먼저 보이고, 그 옆에 [메모] 탭이 있어요."]],["2.9",["설정의 가족 공유에 [코드만 복사] 버튼을 넣었어요. 카톡 초대 글 없이 가족 코드만 복사해 문자·메모 등으로 알려 줄 수 있어요. 화면에는 전과 같이 코드 앞부분만 보여요.","메뉴를 누르면 [메모] [레시피] 탭이 생겼어요. 자주 보는 유튜브·블로그 주소를 메뉴당 3개까지 넣으면 ‘메뉴 이름 레시피 영상 ▶’ 카드로 보여요. 누르면 유튜브가 열리고 뒤로 가면 앱으로 돌아와요. 가족 모두에게 함께 보여요.","설정의 끼니 시간 버튼 12개를 ‘우리 집 밥 시간’ 선택 3개로 줄였어요. 기본은 아침 7시, 점심 12시, 저녁 7시이고 30분 단위로 골라요. 밥 시간이 가까울 때 ‘못 먹어요’를 누르면 따뜻하게 안내해요."]],["2.8",["오늘 밥상 카드를 칸으로 나눴어요. 오늘 저녁 메뉴, 저녁이 바뀌었을 때, 함께 먹는 가족이 서로 다른 색 칸으로 보여요.","반찬이 없는 날은 빈 밑반찬 줄을 숨겨요."]],["2.7",["계획 탭의 주간 계획·월간 달력·돌아보기를 아이콘이 있는 알약 버튼으로 바꿔 한눈에 보여요.","주간 계획 위쪽을 줄여 요일별 메뉴가 더 빨리 보여요. 요약은 한 줄로, '건강식으로 짜기'는 '가볍게 짜기'로 바꿨어요.","오늘 밥상·장보기·메뉴·설정 화면을 같은 디자인으로 다듬었어요. 메뉴·메모에 메뉴 찾기가 생겼어요."]],["2.6",["가족을 쉽게 초대하고 합류할 수 있어요. 가족 초대하기 한 번이면 초대 글이 만들어지고, 받은 가족은 글을 복사해 두고 앱을 열어 [참여하기]만 누르면 돼요.","이미 식단이 있는 폰도 가족 식단에 합칠 수 있어요.","가족이 바꾼 오늘 메뉴에 표시가 붙어요. 설정에서 폰 알림을 켜면(선택) 앱을 닫아도 바뀐 걸 알려 줘요.","앱 평가하기를 설정에 두었어요. 요약 이미지 아래에 앱 이름 한 줄이 들어가요."]],["2.5",["아래 탭을 줄였어요. 계획 탭 안에서 주간 계획, 월간 달력, 돌아보기를 오갈 수 있어요.","돌아보기에서 한 주·한 달·전체의 집밥 비율, 자주 먹은 메뉴, 요일별·가족별 저녁, 칼로리 흐름을 볼 수 있어요.","함께 먹은 날 이어달리기, 오랜만에 먹을 메뉴, 요약 이미지 공유, 달력 날짜 점 색을 더했어요."]],["2.4",["끼니별 메뉴의 대략적인 칼로리를 오늘 밥상과 주간 계획에 참고용으로 보여줘요."]],["2.3",["주간 계획의 요일 카드에서도 ‘+ 빠지는 가족’으로 못 먹어요·늦게 먹어요를 표시할 수 있어요.","빠지는 가족이 있는 날은 요일 카드에 먹는 인원이 보이고, 한 주 자동으로 짜기는 모두 못 먹는 끼니를 건너뛰어요.","설정 탭에 앱 버전과 버전별 업데이트 내역을 넣었어요."]],["2.2",["개발자 답변이 앱에 안 보이던 문제를 고쳤어요.","의견 화면에 [답변 확인] 버튼을 넣었어요. 설정에서 의견 화면을 열거나 앱으로 돌아오면 답변을 다시 확인해요."]],["2.1",["달력에서 날짜를 눌러 ‘나 못 먹어요’·‘나 늦게 먹어요’를 미리 표시할 수 있어요.","미리 표시한 빠짐이 주간 계획과 오늘 밥상의 내일 칸에도 보여요.","다른 가족이 앞으로 2주 안에 빠짐을 표시하면 날짜와 함께 알려 줘요."]],["2.0",["가족이 ‘못 먹어요’·‘늦게 먹어요’를 누르면 오늘 밥상에 누가 빠지는지 보여요.","가족이 ‘알겠어요’를 누르면 알려 준 사람에게 확인 표시가 떠요.","앱을 처음 켤 때 가족에게 보일 이름을 적어요."]],["1.9",["+ 버튼을 누르면 그 칸의 메뉴만 떠서, 다른 끼니를 잘못 고치는 일이 없어요."]],["1.8",["메뉴 이름을 보고 칼로리를 넣어 주는 음식이 1,200개 넘게 늘었어요."]],["1.7",["글이 단어 단위로 깔끔하게 줄 바꿈되도록 다듬었어요.","설정 탭의 안내 문구를 짧고 쉽게 고쳤어요."]],["1.6",["앱 공유하기와 가족 초대 글에 테스트 기간 설치 방법을 넣었어요."]],["1.5",["백업을 파일로 카톡·메일에 보내고, 그 파일로 바로 복원할 수 있어요.","설정 탭의 백업 화면을 더 쉽게 바꿨어요."]],["1.4",["달력 탭에서 한 달 식단을 한눈에 보고 바로 고칠 수 있어요.","가족이 함께 쓰는 장보기 메모가 생겼어요.","'먹고 싶어요'에 올린 메뉴가 식단 짤 때 먼저 들어가요.","메뉴를 바로 입력하고, 날짜별 메모를 남길 수 있어요.","날짜 줄, 누가 바꿨는지 표시, 주 시작 요일·글자 크기 설정을 넣었어요."]],["1.3",["새 버전이 나오면 앱을 켤 때 업데이트할지 물어봐요."]],["1.2",["새 아이콘과 따뜻한 색, 가족 캐릭터로 화면을 새로 꾸몄어요.","날마다 아침·점심·저녁을 체크해 우리 집에 맞게 계획할 수 있어요.","화면을 옆으로 밀면 다음 탭으로 넘어가요.","설정 탭에 앱 사용 가이드와 PC 링크 보내기, 처음 쓰는 분께 가족 공유 안내를 넣었어요.","가족 폰끼리 동시에 메뉴를 추가하면 일부가 사라지던 문제를 고쳤어요.","화면 아래에 개발자 운영 사이트 바로가기를 추가했어요."]],["1.0",["첫 버전. 가족과 함께 먹을 한 주 밥상을 짜고, 가족 폰끼리 함께 봐요."]]];
 (function(){const el=$('#verCard');if(!el)return;
-  el.innerHTML=`<div class="verrow"><span>앱 버전</span><b>${esc(APP_VERSION)}</b></div>
-    <details style="margin-top:10px"><summary>버전별 업데이트 내역 보기</summary><div class="verhist">${HISTORY.map(([v,l])=>`<b>${esc(v)}</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div></details>`})();
+  el.innerHTML=`<div class="verrow"><span>앱 버전</span><b>${esc(APP_VERSION)}</b></div><div class="verrow" id="updDiag49"></div><div class="btnrow" style="justify-content:flex-start;margin:6px 0 0"><button class="btn small" type="button" id="updNow49">지금 확인</button></div><details id="errDiag49" style="margin-top:6px"></details>
+    <details style="margin-top:10px"><summary>버전별 업데이트 내역 보기</summary><div class="verhist">${HISTORY.map(([v,l])=>`<b>${esc(v)}</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div></details>`;
+  updDiag49();errDiag49();const un=document.getElementById('updNow49');if(un)un.onclick=()=>checkUpdate(true)})();
 // 폼 주소(…/formResponse)와 질문별 entry 번호. 비어 있으면 보내기 대신 복사
 const FEEDBACK={url:'https://docs.google.com/forms/d/e/1FAIpQLSfwSMPv2kpMLeW9rysU6FDuZ673e22pDw29TM-J5yhY3OmJ2w/formResponse',star:'entry.363206461',text:'entry.622716117',info:'entry.569669565',id:'entry.2047137874',replies:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgeLFuclIoR7fOhfLAZu0R4J-c-Gj4ke-_rNeZRNGedJl58Yb6eswTVkIkL9ajNl5bPG38VqVat1HW/pub?gid=775957399&single=true&output=csv'};
 // 개발자 답변: 시트 '답변' 탭(번호, 답변)을 CSV로 웹에 게시한 주소
@@ -2599,7 +2662,7 @@ window.androidBack=function(){if($('#modalRoot').innerHTML){closeModal();return 
 if(!FEATURE_SHOP)document.querySelector('#tabs [data-tab="shop"]').hidden=true;
 autoDone();saveLocal();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoDone();render();checkUpdate();loadInstall();loadReplies()}});loadInstall();loadKcalDb();
-last34=snap34();render();renderSync();startSync();
+last34=snap34();sr49('처음 그리기',render);sr49('공유표시',renderSync);startSync();
 try{if(PREFS.home===1)goTab('plan');else if(PREFS.home===2)goTab('cal')}catch(e){}
 // PC 등에서 #join-가족코드 주소로 열면 바로 참여 창
 const jm=location.hash.match(/^#join-([a-z0-9]{20,})$/);
@@ -2873,7 +2936,7 @@ function rcMatch42(rows){ // rows[i].t 와 사야 할 것(안 산 것)을 이어
     if(hit){used[hit.id]=1;r.cid=hit.id}});
 }
 function rcDay42(t){var k=new Date(t-new Date(t).getTimezoneOffset()*6e4).toISOString().slice(0,10),t0=todayISO();return k===t0?'오늘':k===addDays(t0,-1)?'어제':md(k)+'('+dow(k)+')'}
-function renderRc42(){rcUse45();renderBuys46()}
+function renderRc42(){sr49('사진용량',rcUse45);renderBuys46()}
 /* ---------- 4.6: 장 본 기록 화면·동작 ---------- */
 var buyYm46=null,buyDay46=null;
 function minDay46(){return addMonths(todayISO().slice(0,7),-24)+'-01'}
@@ -2883,6 +2946,11 @@ function pvNames46(b){var a=b.items.map(function(i){return i.n});return a.slice(
 function buyRowHtml46(b){var who=whoLbl46(b.by);
   return '<button class="rrow46" type="button" data-bz46="'+b.id+'"><span class="d">'+esc(md(b.d))+'('+esc(dow(b.d))+')</span><span class="x"><b>'+b.items.length+'가지</b><small>'+(who?esc(who)+' · ':'')+(b.src==='rc'?'🧾 ':'')+(rcPhotoHas47(b)?'📷 ':'')+esc(pvNames46(b))+'</small></span><span>›</span></button>'}
 function renderBuys46(){
+  try{renderBuys46in()}catch(e){errR49('장본기록',e);
+    var el=document.getElementById('buy46');if(el){el.innerHTML='<b>장 본 기록</b><p class="help" style="margin:4px 0 8px">장 본 기록을 지금은 보여 주지 못했어요. 기록은 지워지지 않았어요.</p><button class="btn small" type="button" id="buyRetry49">다시 불러오기</button>';
+      var rb=document.getElementById('buyRetry49');if(rb)rb.onclick=function(){try{renderBuys46in()}catch(e2){errR49('장본기록',e2);toast('아직 불러오지 못했어요. 앱을 껐다 켜 주세요')}}}}
+}
+function renderBuys46in(){
   var el=document.getElementById('buy46');if(!el)return;
   var t=todayISO();if(!buyYm46)buyYm46=t.slice(0,7);
   var ym=buyYm46,y=+ym.slice(0,4),m=+ym.slice(5,7),mm=BUY46.monthMap(S.buys,ym);
@@ -2892,16 +2960,16 @@ function renderBuys46(){
   for(var dd=1;dd<=nd;dd++){var k=ym+'-'+(dd<10?'0'+dd:dd),has=mm[k];
     h+=has?'<button type="button" class="tc46 has'+(k===t?' today':'')+(buyDay46===k?' sel':'')+'" data-bd46="'+k+'" aria-label="'+m+'월 '+dd+'일 장 본 기록 '+has.length+'개">'+dd+'<i class="cdot b"></i></button>'
       :'<div class="tc46'+(k===t?' today':'')+' off">'+dd+'</div>'}
-  var recs=(buyDay46?S.buys.filter(function(b){return b.d===buyDay46}):S.buys.filter(function(b){return b.d.slice(0,7)===ym})).slice().sort(function(a,b){return a.d<b.d?1:a.d>b.d?-1:(b.at||0)-(a.at||0)});
+  var recs=(buyDay46?S.buys.filter(function(b){return b.d===buyDay46}):S.buys.filter(function(b){return b&&typeof b.d==='string'&&b.d.slice(0,7)===ym})).slice().sort(function(a,b){return a.d<b.d?1:a.d>b.d?-1:(b.at||0)-(a.at||0)});
   var head='<div class="bnav46"><button type="button" data-bm46="-1" aria-label="이전 달">‹</button><b>'+y+'년 '+m+'월'+(Object.keys(mm).length?' · 장 본 날 '+Object.keys(mm).length+'일':'')+'</b><button type="button" data-bm46="1" aria-label="다음 달"'+(ym>=t.slice(0,7)?' disabled':'')+'>›</button></div>';
-  var list=recs.map(buyRowHtml46).join('');
+  var list=recs.map(function(b){try{return buyRowHtml46(b)}catch(e){errR49('장본기록줄',e);return ''}}).join('');
   var empty=!S.buys.length?'아직 기록이 없어요. 영수증을 붙이거나 위 [정리하기]를 누르면 장 본 날짜별로 여기에 남아요.':'이 달에는 남은 기록이 없어요.';
   el.innerHTML='<b>장 보고 오신 날을 모아 봐요</b><p class="help" style="margin:2px 0 0">산 것은 ‘장 본 날’에 붙어요. 식단과는 따로 두어서, 과자나 음료를 샀어도 괜찮아요. 금액은 저장하지 않아요.</p>'+head+'<div class="tcal46">'+h+'</div>'+
     (buyDay46?'<div class="bday46"><span>'+esc(md(buyDay46))+'('+esc(dow(buyDay46))+') 하루만 보는 중</span><button class="btn small" type="button" data-bdclr46="1">이 달 전체 보기</button></div>':'')+
     (list?'<div class="blist46">'+list+'</div>':'<div class="empty">'+empty+'</div>')+
     (S.buys.length?'<p class="help" style="margin:8px 0 0;font-size:12px">기록은 24개월 동안 남아요.</p>':'');
 }
-function buyDot46(k){return S.buys.some(function(b){return b.d===k})}
+function buyDot46(k){return S.buys.some(function(b){return b&&b.d===k})}
 function buyRow46(k){var a=S.buys.filter(function(b){return b.d===k});if(!a.length)return '';var n=0;a.forEach(function(b){n+=b.items.length});
   return '<div class="row"><button class="buyrow46" type="button" data-buyday="'+k+'">🛒 이날 장 본 것 '+n+'가지 <span>›</span></button></div>'}
 function buyDaySheet46(k){
@@ -2979,7 +3047,8 @@ function buySheet46(id){
   });
 }
 /* [정리하기]: 산 것을 지우지 않고 장 본 기록으로 남긴다 */
-function tidyAsk46(){
+function tidyAsk46(){try{S.buys=fixBuys49(S.buys);tidyAsk46in()}catch(e){errR49('정리하기',e);toast('정리하지 못했어요. 앱을 껐다 켠 뒤 다시 눌러 주세요')}}
+function tidyAsk46in(){
   var done=S.cart.filter(function(x){return x.done});if(!done.length)return;
   var has={};S.buys.forEach(function(b){has[b.id]=1});
   var need=done.filter(function(x){return !(x.rc&&has[x.rc])});
@@ -2994,7 +3063,8 @@ function tidyAsk46(){
     document.getElementById('tdOk').onclick=function(){var v=t,e=document.getElementById('tdDate');if(e){v=e.value;if(!/^\d{4}-\d\d-\d\d$/.test(v)||v>t||v<minDay46()){toast('장 본 날은 오늘까지, 최근 24개월 안에서 골라 주세요');return}}
       closeModal();tidy46(v)}});
 }
-function tidy46(day){
+function tidy46(day){try{S.buys=fixBuys49(S.buys);tidy46in(day)}catch(e){errR49('정리하기',e);toast('정리하지 못했어요. 앱을 껐다 켠 뒤 다시 눌러 주세요')}}
+function tidy46in(day){
   var done=S.cart.filter(function(x){return x.done});if(!done.length)return;
   var has={};S.buys.forEach(function(b){has[b.id]=1});
   var g=BUY46.group(done,{dev:DEV,uid:uid,has:has,now:Date.now(),day:day});
@@ -3178,7 +3248,6 @@ window.__ocrRes=function(r){
 };
 /* 영수증 사진 보관(선택): 같은 무료 실시간 DB의 따로 만든 칸(families/코드/rcimg/번호)에 넣고, 열 때만 읽어요 */
 /* 4.7: 영수증 사진은 먼저 이 폰 안(IndexedDB)에 보관하고, 가족 저장소에도 올려 봐요. 가족 저장소 규칙이 막혀 있으면 이 폰에만 남고 따로 알려 줘요 */
-var rcMem47={};
 function rcIdb47(){return new Promise(function(ok,no){try{var q=indexedDB.open('wd-rc47',1);q.onupgradeneeded=function(){q.result.createObjectStore('img')};q.onsuccess=function(){ok(q.result)};q.onerror=function(){no(q.error)}}catch(e){no(e)}})}
 function rcLocList47(){try{var o=JSON.parse(localStorage.getItem('wd.rcloc')||'{}');return o&&typeof o==='object'?o:{}}catch(e){return {}}}
 function rcLocMeta47(rid,v){try{var o=rcLocList47();if(v===null)delete o[rid];else o[rid]=v;localStorage.setItem('wd.rcloc',JSON.stringify(o))}catch(e){}}
